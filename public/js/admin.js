@@ -4,6 +4,8 @@
 
 // Switch admin tab
 function switchAdminTab(tabName) {
+    console.log('switchAdminTab called with:', tabName);
+    
     // Update tab buttons
     document.querySelectorAll('.admin-tab-btn').forEach(btn => {
         btn.classList.remove('active');
@@ -18,16 +20,22 @@ function switchAdminTab(tabName) {
     
     // Load tab-specific data
     if (tabName === 'analytics' && typeof loadAnalytics === 'function') {
+        console.log('Loading analytics...');
         loadAnalytics();
     } else if (tabName === 'users') {
+        console.log('Loading users list...');
         loadUsersList();
     } else if (tabName === 'security' && typeof loadActiveSessions === 'function') {
+        console.log('Loading security/sessions...');
         loadActiveSessions();
     } else if (tabName === 'storage' && typeof analyzeStorage === 'function') {
+        console.log('Storage tab activated');
         // Storage tab loads on demand via buttons
     } else if (tabName === 'oauth') {
+        console.log('Checking OAuth providers...');
         checkOAuthProviders();
     } else if (tabName === 'logs') {
+        console.log('Loading activity log...');
         loadActivityLog();
     }
 }
