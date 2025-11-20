@@ -20,6 +20,10 @@ async function loadSettings() {
             document.getElementById('settingsLastLogin').textContent = user.last_login ? new Date(user.last_login).toLocaleDateString() : 'Never';
             document.getElementById('settingsOAuthProvider').textContent = user.oauth_provider ? user.oauth_provider.charAt(0).toUpperCase() + user.oauth_provider.slice(1) : 'None';
             
+            // Update current provider display
+            const providerName = user.oauth_provider ? user.oauth_provider.charAt(0).toUpperCase() + user.oauth_provider.slice(1) : 'None';
+            document.getElementById('currentProvider').textContent = providerName;
+            
             // Pre-fill email field if exists
             if (user.email) {
                 document.getElementById('newEmail').value = user.email;
@@ -175,4 +179,20 @@ document.getElementById('deleteAccountBtn')?.addEventListener('click', async fun
     } finally {
         showLoading(false);
     }
+});
+
+// Handle OAuth provider connections in settings
+document.addEventListener('DOMContentLoaded', function() {
+    const oauthButtons = document.querySelectorAll('.settings-section .oauth-btn');
+    
+    oauthButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            const provider = this.dataset.provider;
+            
+            if (confirm(`Connect your ${provider.charAt(0).toUpperCase() + provider.slice(1)} account? This will allow you to sign in using this provider.`)) {
+                // Redirect to OAuth login
+                window.location.href = `oauth-login.php?provider=${provider}`;
+            }
+        });
+    });
 });
