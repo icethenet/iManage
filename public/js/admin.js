@@ -16,7 +16,17 @@ function switchAdminTab(tabName) {
     document.querySelectorAll('.admin-tab-content').forEach(content => {
         content.classList.remove('active');
     });
-    document.getElementById(`admin-tab-${tabName}`).classList.add('active');
+    
+    const targetTab = document.getElementById(`admin-tab-${tabName}`);
+    console.log('Target tab element:', targetTab);
+    
+    if (targetTab) {
+        targetTab.classList.add('active');
+        console.log('Active class added to:', `admin-tab-${tabName}`);
+        console.log('Tab classes:', targetTab.className);
+    } else {
+        console.error('Tab element not found:', `admin-tab-${tabName}`);
+    }
     
     // Load tab-specific data
     if (tabName === 'analytics' && typeof loadAnalytics === 'function') {

@@ -1523,12 +1523,19 @@ body.logged-in .user-is-logged-out {
 }
 
 .admin-tab-content {
-    display: none;
+    display: none !important;
 }
 
 .admin-tab-content.active {
-    display: block;
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    height: auto !important;
     animation: fadeIn 0.3s ease;
+}
+
+#admin-tab-logs.active {
+    display: block !important;
 }
 
 @keyframes fadeIn {
