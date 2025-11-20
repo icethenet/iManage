@@ -14,11 +14,11 @@ async function loadSettings() {
         
         if (profileData.success) {
             const user = profileData.user;
-            document.getElementById('settingsUsername').textContent = user.username || 'N/A';
-            document.getElementById('settingsEmail').textContent = user.email || 'Not set';
-            document.getElementById('settingsMemberSince').textContent = user.created_at ? new Date(user.created_at).toLocaleDateString() : 'N/A';
-            document.getElementById('settingsLastLogin').textContent = user.last_login ? new Date(user.last_login).toLocaleDateString() : 'Never';
-            document.getElementById('settingsOAuthProvider').textContent = user.oauth_provider ? user.oauth_provider.charAt(0).toUpperCase() + user.oauth_provider.slice(1) : 'None';
+            document.getElementById('profileUsername').textContent = user.username || 'N/A';
+            document.getElementById('profileEmail').textContent = user.email || 'Not set';
+            document.getElementById('profileMemberSince').textContent = user.created_at ? new Date(user.created_at).toLocaleDateString() : 'N/A';
+            document.getElementById('profileLastLogin').textContent = user.last_login ? new Date(user.last_login).toLocaleDateString() : 'Never';
+            document.getElementById('profileProvider').textContent = user.oauth_provider ? user.oauth_provider.charAt(0).toUpperCase() + user.oauth_provider.slice(1) : 'None';
             
             // Update current provider display if element exists
             const currentProviderEl = document.getElementById('currentProvider');
@@ -39,10 +39,10 @@ async function loadSettings() {
         
         if (statsData.success) {
             const stats = statsData.stats;
-            document.getElementById('totalImages').textContent = stats.total_images || 0;
-            document.getElementById('totalFolders').textContent = stats.total_folders || 0;
-            document.getElementById('storageUsed').textContent = `${(stats.storage_used / 1024 / 1024).toFixed(2)} MB`;
-            document.getElementById('sharedImages').textContent = stats.shared_images || 0;
+            document.getElementById('statImages').textContent = stats.total_images || 0;
+            document.getElementById('statFolders').textContent = stats.total_folders || 0;
+            document.getElementById('statStorage').textContent = `${(stats.storage_used / 1024 / 1024).toFixed(2)} MB`;
+            document.getElementById('statShared').textContent = stats.shared_images || 0;
         }
     } catch (error) {
         console.error('Error loading settings:', error);
@@ -56,11 +56,9 @@ document.getElementById('updateEmailForm')?.addEventListener('submit', async fun
     e.preventDefault();
     
     const email = document.getElementById('newEmail').value.trim();
-    const statusEl = document.getElementById('emailStatus');
     
     if (!email) {
-        statusEl.textContent = 'Please enter an email address';
-        statusEl.className = 'form-status error';
+        alert('Please enter an email address');
         return;
     }
     
@@ -76,16 +74,13 @@ document.getElementById('updateEmailForm')?.addEventListener('submit', async fun
         const data = await response.json();
         
         if (data.success) {
-            statusEl.textContent = 'Email updated successfully';
-            statusEl.className = 'form-status success';
-            document.getElementById('settingsEmail').textContent = email;
+            alert('Email updated successfully');
+            document.getElementById('profileEmail').textContent = email;
         } else {
-            statusEl.textContent = data.error || 'Failed to update email';
-            statusEl.className = 'form-status error';
+            alert(data.error || 'Failed to update email');
         }
     } catch (error) {
-        statusEl.textContent = 'Error updating email';
-        statusEl.className = 'form-status error';
+        alert('Error updating email');
         console.error('Error:', error);
     } finally {
         showLoading(false);
@@ -98,24 +93,20 @@ document.getElementById('changePasswordForm')?.addEventListener('submit', async 
     
     const currentPassword = document.getElementById('currentPassword').value;
     const newPassword = document.getElementById('newPassword').value;
-    const confirmPassword = document.getElementById('confirmNewPassword').value;
-    const statusEl = document.getElementById('passwordStatus');
+    const confirmPassword = document.getElementById('confirmPassword').value;
     
     if (!currentPassword || !newPassword || !confirmPassword) {
-        statusEl.textContent = 'All fields are required';
-        statusEl.className = 'form-status error';
+        alert('All fields are required');
         return;
     }
     
     if (newPassword !== confirmPassword) {
-        statusEl.textContent = 'New passwords do not match';
-        statusEl.className = 'form-status error';
+        alert('New passwords do not match');
         return;
     }
     
     if (newPassword.length < 8) {
-        statusEl.textContent = 'Password must be at least 8 characters';
-        statusEl.className = 'form-status error';
+        alert('Password must be at least 8 characters');
         return;
     }
     
@@ -134,17 +125,14 @@ document.getElementById('changePasswordForm')?.addEventListener('submit', async 
         const data = await response.json();
         
         if (data.success) {
-            statusEl.textContent = 'Password changed successfully';
-            statusEl.className = 'form-status success';
+            alert('Password changed successfully');
             // Clear form
             document.getElementById('changePasswordForm').reset();
         } else {
-            statusEl.textContent = data.error || 'Failed to change password';
-            statusEl.className = 'form-status error';
+            alert(data.error || 'Failed to change password');
         }
     } catch (error) {
-        statusEl.textContent = 'Error changing password';
-        statusEl.className = 'form-status error';
+        alert('Error changing password');
         console.error('Error:', error);
     } finally {
         showLoading(false);

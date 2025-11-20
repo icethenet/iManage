@@ -29,12 +29,16 @@ function switchAdminTab(tabName) {
     }
     
     // Load tab-specific data
-    if (tabName === 'analytics' && typeof loadAnalytics === 'function') {
-        console.log('Loading analytics...');
+    if (tabName === 'overview' && typeof loadAnalytics === 'function') {
+        console.log('Loading overview with analytics...');
         loadAnalytics();
     } else if (tabName === 'users') {
         console.log('Loading users list...');
-        loadUsersList();
+        if (typeof loadUsersList === 'function') {
+            loadUsersList();
+        } else {
+            console.error('loadUsersList function not found');
+        }
     } else if (tabName === 'security' && typeof loadActiveSessions === 'function') {
         console.log('Loading security/sessions...');
         loadActiveSessions();
@@ -44,6 +48,9 @@ function switchAdminTab(tabName) {
     } else if (tabName === 'oauth') {
         console.log('Checking OAuth providers...');
         checkOAuthProviders();
+    } else if (tabName === 'account' && typeof loadSettings === 'function') {
+        console.log('Loading account settings...');
+        loadSettings();
     } else if (tabName === 'logs') {
         console.log('Loading activity log...');
         loadActivityLog();
@@ -75,9 +82,6 @@ async function loadAdmin() {
             loadSystemHealth();
         }
 
-        // Load users list
-        await loadUsersList();
-
         // Check OAuth provider status
         checkOAuthProviders();
 
@@ -101,13 +105,24 @@ async function loadAdmin() {
 
 // Load users list
 async function loadUsersList() {
+    console.log('loadUsersList() starting...');
     try {
+        console.log('Fetching admin_users...');
         const response = await fetch('api.php?action=admin_users');
+        console.log('Response received:', response.status);
         const data = await response.json();
+        
+        console.log('Users API response:', data);
         
         const usersList = document.getElementById('usersList');
         
-        if (data.success && data.data && data.data.length > 0) {
+        if (!data.success) {
+            console.error('API returned error:', data.error);
+            usersList.innerHTML = `<p style="color: #dc3545;">Error: ${data.error || 'Failed to load users'}</p>`;
+            return;
+        }
+        
+        if (data.data && data.data.length > 0) {
             let html = '<table class="users-table">';
             html += '<thead><tr><th>Username</th><th>Email</th><th>OAuth</th><th>Joined</th><th>Images</th><th>Storage</th><th>Actions</th></tr></thead>';
             html += '<tbody>';
@@ -135,11 +150,11 @@ async function loadUsersList() {
             html += '</tbody></table>';
             usersList.innerHTML = html;
         } else {
-            usersList.innerHTML = '<p style="color: #666;">No users found.</p>';
+            usersList.innerHTML = '<p style="color: #666;">No users found in database.</p>';
         }
     } catch (error) {
         console.error('Error loading users:', error);
-        document.getElementById('usersList').innerHTML = '<p style="color: #dc3545;">Failed to load users.</p>';
+        document.getElementById('usersList').innerHTML = '<p style="color: #dc3545;">Failed to load users. Check console for details.</p>';
     }
 }
 

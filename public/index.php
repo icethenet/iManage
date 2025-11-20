@@ -21,7 +21,6 @@
                 <a href="#" class="nav-link active" data-view="gallery">Gallery</a>
                 <a href="#" class="nav-link" data-view="upload">Upload</a>
                 <a href="#" class="nav-link" data-view="folders">Folders</a>
-                <a href="#" class="nav-link" data-view="settings">Settings</a>
                 <a href="#" class="nav-link admin-only" data-view="admin" style="display: none;">Admin</a>
             </div>
             <div class="nav-left user-is-logged-out">
@@ -192,108 +191,10 @@
                     <form id="registerForm" class="auth-form">
                         <div class="form-group"><label for="registerUsername">Username</label><input type="text" id="registerUsername" name="username" required></div>
                         <div class="form-group"><label for="registerPassword">Password</label><input type="password" id="registerPassword" name="password" minlength="8" required></div>
-                        <div class="form-group"><label for="confirmPassword">Confirm Password</label><input type="password" id="confirmPassword" name="confirm_password" minlength="8" required></div>
+                        <div class="form-group"><label for="registerConfirmPassword">Confirm Password</label><input type="password" id="registerConfirmPassword" name="confirm_password" minlength="8" required></div>
                         <button type="submit" class="btn btn-primary">Register</button>
                         <div id="registerStatus" class="auth-status"></div>
                     </form>
-                </div>
-            </section>
-
-            <!-- Settings View -->
-            <section id="settings-view" class="view">
-                <div class="settings-container">
-                    <h2>Account Settings</h2>
-                    
-                    <!-- Profile Information -->
-                    <div class="settings-section">
-                        <h3>Profile Information</h3>
-                        <div class="settings-info">
-                            <div class="info-row">
-                                <span class="label">Username:</span>
-                                <span id="settingsUsername" class="value"></span>
-                            </div>
-                            <div class="info-row">
-                                <span class="label">Email:</span>
-                                <span id="settingsEmail" class="value"></span>
-                            </div>
-                            <div class="info-row">
-                                <span class="label">Member Since:</span>
-                                <span id="settingsMemberSince" class="value"></span>
-                            </div>
-                            <div class="info-row">
-                                <span class="label">Last Login:</span>
-                                <span id="settingsLastLogin" class="value"></span>
-                            </div>
-                            <div class="info-row">
-                                <span class="label">OAuth Provider:</span>
-                                <span id="settingsOAuthProvider" class="value"></span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Update Email -->
-                    <div class="settings-section">
-                        <h3>Update Email</h3>
-                        <form id="updateEmailForm" class="settings-form">
-                            <div class="form-group">
-                                <label for="newEmail">New Email Address:</label>
-                                <input type="email" id="newEmail" name="email" placeholder="your.email@example.com">
-                            </div>
-                            <button type="submit" class="btn btn-primary">Update Email</button>
-                            <div id="emailStatus" class="form-status"></div>
-                        </form>
-                    </div>
-
-                    <!-- Change Password -->
-                    <div class="settings-section">
-                        <h3>Change Password</h3>
-                        <form id="changePasswordForm" class="settings-form">
-                            <div class="form-group">
-                                <label for="currentPassword">Current Password:</label>
-                                <input type="password" id="currentPassword" name="current_password" minlength="8" required>
-                            </div>
-                            <div class="form-group">
-                                <label for="newPassword">New Password:</label>
-                                <input type="password" id="newPassword" name="new_password" minlength="8" required>
-                            </div>
-                            <div class="form-group">
-                                <label for="confirmNewPassword">Confirm New Password:</label>
-                                <input type="password" id="confirmNewPassword" name="confirm_password" minlength="8" required>
-                            </div>
-                            <button type="submit" class="btn btn-primary">Change Password</button>
-                            <div id="passwordStatus" class="form-status"></div>
-                        </form>
-                    </div>
-
-                    <!-- Account Statistics -->
-                    <div class="settings-section">
-                        <h3>Account Statistics</h3>
-                        <div class="stats-grid">
-                            <div class="stat-card">
-                                <div class="stat-value" id="totalImages">0</div>
-                                <div class="stat-label">Total Images</div>
-                            </div>
-                            <div class="stat-card">
-                                <div class="stat-value" id="totalFolders">0</div>
-                                <div class="stat-label">Folders</div>
-                            </div>
-                            <div class="stat-card">
-                                <div class="stat-value" id="storageUsed">0 MB</div>
-                                <div class="stat-label">Storage Used</div>
-                            </div>
-                            <div class="stat-card">
-                                <div class="stat-value" id="sharedImages">0</div>
-                                <div class="stat-label">Shared Images</div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Danger Zone -->
-                    <div class="settings-section danger-zone">
-                        <h3>Danger Zone</h3>
-                        <p>Deleting your account is permanent and cannot be undone.</p>
-                        <button id="deleteAccountBtn" class="btn btn-danger">Delete Account</button>
-                    </div>
                 </div>
             </section>
 
@@ -305,12 +206,12 @@
                     <!-- Admin Navigation Tabs -->
                     <div class="admin-tabs">
                         <button class="admin-tab-btn active" onclick="switchAdminTab('overview')">📊 Overview</button>
-                        <button class="admin-tab-btn" onclick="switchAdminTab('analytics')">📈 Analytics</button>
                         <button class="admin-tab-btn" onclick="switchAdminTab('users')">👥 Users</button>
                         <button class="admin-tab-btn" onclick="switchAdminTab('security')">🔒 Security</button>
                         <button class="admin-tab-btn" onclick="switchAdminTab('storage')">💾 Storage</button>
                         <button class="admin-tab-btn" onclick="switchAdminTab('oauth')">🔑 OAuth</button>
                         <button class="admin-tab-btn" onclick="switchAdminTab('settings')">⚙️ Settings</button>
+                        <button class="admin-tab-btn" onclick="switchAdminTab('account')">👤 My Account</button>
                         <button class="admin-tab-btn" onclick="switchAdminTab('logs')">📋 Activity</button>
                     </div>
                     
@@ -354,10 +255,7 @@
                             </div>
                         </div>
                     </div>
-                    </div><!-- End Overview Tab -->
 
-                    <!-- Analytics Tab -->
-                    <div id="admin-tab-analytics" class="admin-tab-content">
                     <!-- Analytics Dashboard -->
                     <div class="admin-section">
                         <h3>📈 Analytics Dashboard</h3>
@@ -443,7 +341,9 @@
                             </div>
                         </div>
                     </div>
-                    </div><!-- End Analytics Tab -->
+                    </div><!-- End Overview Tab -->
+
+                    <!-- Analytics Tab -->
 
                     <!-- Users Tab -->
                     <div id="admin-tab-users" class="admin-tab-content">
@@ -1200,7 +1100,120 @@
                             <button class="btn" onclick="importSystemSettings()">📤 Import Config</button>
                         </div>
                     </div>
+                        </div>
+                    </div>
                     </div><!-- End Settings Tab -->
+
+                    <!-- My Account Tab -->
+                    <div id="admin-tab-account" class="admin-tab-content">
+                        <div class="admin-section">
+                            <h2>👤 My Account</h2>
+                            <p style="margin-bottom: 20px; color: #666; font-size: 14px;">
+                                Manage your personal account settings and preferences.
+                            </p>
+
+                            <!-- Profile Information -->
+                            <div class="setting-section">
+                                <h3>Profile Information</h3>
+                                <div class="setting-content">
+                                    <div class="profile-info-grid">
+                                        <div class="profile-info-item">
+                                            <span class="info-label">Username</span>
+                                            <span class="info-value" id="profileUsername">-</span>
+                                        </div>
+                                        <div class="profile-info-item">
+                                            <span class="info-label">Email</span>
+                                            <span class="info-value" id="profileEmail">-</span>
+                                        </div>
+                                        <div class="profile-info-item">
+                                            <span class="info-label">Member Since</span>
+                                            <span class="info-value" id="profileMemberSince">-</span>
+                                        </div>
+                                        <div class="profile-info-item">
+                                            <span class="info-label">Last Login</span>
+                                            <span class="info-value" id="profileLastLogin">-</span>
+                                        </div>
+                                        <div class="profile-info-item">
+                                            <span class="info-label">Login Provider</span>
+                                            <span class="info-value" id="profileProvider">-</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Update Email -->
+                            <div class="setting-section">
+                                <h3>Update Email</h3>
+                                <div class="setting-content">
+                                    <form id="updateEmailForm">
+                                        <div class="form-group">
+                                            <label for="newEmail">New Email Address</label>
+                                            <input type="email" id="newEmail" name="newEmail" required>
+                                        </div>
+                                        <button type="submit" class="btn btn-primary">Update Email</button>
+                                    </form>
+                                </div>
+                            </div>
+
+                            <!-- Change Password -->
+                            <div class="setting-section">
+                                <h3>Change Password</h3>
+                                <div class="setting-content">
+                                    <form id="changePasswordForm">
+                                        <div class="form-group">
+                                            <label for="currentPassword">Current Password</label>
+                                            <input type="password" id="currentPassword" name="currentPassword" required>
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="newPassword">New Password</label>
+                                            <input type="password" id="newPassword" name="newPassword" required>
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="confirmPassword">Confirm New Password</label>
+                                            <input type="password" id="confirmPassword" name="confirmPassword" required>
+                                        </div>
+                                        <button type="submit" class="btn btn-primary">Change Password</button>
+                                    </form>
+                                </div>
+                            </div>
+
+                            <!-- Account Statistics -->
+                            <div class="setting-section">
+                                <h3>Account Statistics</h3>
+                                <div class="setting-content">
+                                    <div class="stats-grid">
+                                        <div class="stat-card">
+                                            <div class="stat-value" id="statImages">0</div>
+                                            <div class="stat-label">Total Images</div>
+                                        </div>
+                                        <div class="stat-card">
+                                            <div class="stat-value" id="statFolders">0</div>
+                                            <div class="stat-label">Folders</div>
+                                        </div>
+                                        <div class="stat-card">
+                                            <div class="stat-value" id="statStorage">0 MB</div>
+                                            <div class="stat-label">Storage Used</div>
+                                        </div>
+                                        <div class="stat-card">
+                                            <div class="stat-value" id="statShared">0</div>
+                                            <div class="stat-label">Shared Images</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Danger Zone -->
+                            <div class="setting-section danger-zone">
+                                <h3>⚠️ Danger Zone</h3>
+                                <div class="setting-content">
+                                    <div class="danger-warning">
+                                        <p><strong>Warning:</strong> This action cannot be undone. All your images, folders, and data will be permanently deleted.</p>
+                                        <button id="deleteAccountBtn" class="btn btn-danger">Delete Account</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div><!-- End My Account Tab -->
 
                     <!-- Activity Logs Tab -->
                     <div id="admin-tab-logs" class="admin-tab-content">

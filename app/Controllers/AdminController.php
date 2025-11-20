@@ -90,13 +90,15 @@ class AdminController {
                 $user['total_storage'] = $imageModel->getTotalSizeByUser($user['id']);
             }
             
+            error_log("Users list: Found " . count($users) . " users");
+            
             $this->jsonResponse([
                 'success' => true,
                 'data' => $users
             ]);
         } catch (Exception $e) {
             error_log("Error getting users list: " . $e->getMessage());
-            $this->jsonResponse(['success' => false, 'error' => 'Failed to get users list']);
+            $this->jsonResponse(['success' => false, 'error' => 'Failed to get users list: ' . $e->getMessage()]);
         }
     }
     
