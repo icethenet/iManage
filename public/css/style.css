@@ -7,7 +7,7 @@
 
 body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background-color: #f5f5f5;
+    background-color: #f0f2f5;
     color: #333;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
@@ -17,6 +17,7 @@ body {
     max-width: 1400px;
     margin: 0 auto;
     background: white;
+    min-height: 100vh;
 }
 
 /* Touch-friendly button sizing */
@@ -156,13 +157,32 @@ body.logged-in .user-is-logged-out {
 
 /* Main Content - Mobile First */
 .main-content {
-    padding: 20px 15px;
-    min-height: calc(100vh - 250px);
+    padding: 15px;
+    min-height: 200px;
+    background: #fafafa;
+}
+
+#gallery-view,
+#upload-view,
+#folders-view,
+#login-view,
+#register-view {
+    background: white;
+    padding: 20px;
+    border-radius: 8px;
 }
 
 @media (min-width: 768px) {
     .main-content {
-        padding: 25px 20px;
+        padding: 20px;
+    }
+    
+    #gallery-view,
+    #upload-view,
+    #folders-view,
+    #login-view,
+    #register-view {
+        padding: 25px;
     }
 }
 
@@ -641,11 +661,12 @@ body.logged-in .user-is-logged-out {
 }
 
 .settings-section {
-    background: #fafafa;
-    border: 1px solid #e5e5e5;
-    border-radius: 6px;
-    padding: 20px;
+    background: white;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 25px;
     margin-bottom: 20px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
 }
 
 .settings-section h3 {
@@ -656,9 +677,10 @@ body.logged-in .user-is-logged-out {
 }
 
 .settings-info {
-    background: white;
-    border-radius: 4px;
+    background: #f8f9fa;
+    border-radius: 6px;
     padding: 15px;
+    border: 1px solid #e9ecef;
 }
 
 .settings-info .info-row {
@@ -691,9 +713,10 @@ body.logged-in .user-is-logged-out {
 }
 
 .settings-form {
-    background: white;
-    border-radius: 4px;
+    background: #f8f9fa;
+    border-radius: 6px;
     padding: 15px;
+    border: 1px solid #e9ecef;
 }
 
 .settings-form .form-group {
@@ -791,21 +814,22 @@ body.logged-in .user-is-logged-out {
 }
 
 .danger-zone {
-    border: 2px solid #f44336 !important;
+    border: 2px solid #dc3545 !important;
     background: #fff5f5 !important;
 }
 
 .danger-zone h3 {
-    color: #f44336 !important;
+    color: #dc3545 !important;
 }
 
 .danger-zone p {
     color: #666;
     margin: 10px 0 15px 0;
     background: white;
-    padding: 12px;
-    border-radius: 4px;
+    padding: 15px;
+    border-radius: 6px;
     font-size: 14px;
+    border-left: 4px solid #dc3545;
 }
 
 .btn-danger {
