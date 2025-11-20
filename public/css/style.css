@@ -391,6 +391,92 @@ body.logged-in .user-is-logged-out {
 .auth-status.success { background-color: #d4edda; color: #155724; }
 .auth-status.error { background-color: #f8d7da; color: #721c24; }
 
+/* OAuth Styles */
+.oauth-separator {
+    position: relative;
+    text-align: center;
+    margin: 25px 0;
+}
+
+.oauth-separator::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: #ddd;
+}
+
+.oauth-separator span {
+    position: relative;
+    display: inline-block;
+    background: #fff;
+    padding: 0 15px;
+    color: #888;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.oauth-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.oauth-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    width: 100%;
+    padding: 12px 20px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    background: white;
+    color: #333;
+    font-size: 15px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    min-height: 44px;
+}
+
+.oauth-btn:hover {
+    background: #f8f9fa;
+    border-color: #bbb;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.oauth-btn:active {
+    transform: translateY(0);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.oauth-btn svg {
+    flex-shrink: 0;
+}
+
+.oauth-google:hover {
+    background: #f8f9ff;
+    border-color: #4285F4;
+}
+
+.oauth-facebook:hover {
+    background: #f0f7ff;
+    border-color: #1877F2;
+}
+
+.oauth-github:hover {
+    background: #f6f8fa;
+    border-color: #333;
+}
+
+.oauth-microsoft:hover {
+    background: #fff9f0;
+    border-color: #ffba08;
+}
 
 
 /* Pagination */

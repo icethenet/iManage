@@ -117,6 +117,20 @@ class UserController {
         }
     }
 
+    /**
+     * GET /api.php?action=get_oauth_error
+     * Get OAuth error from session (if any)
+     */
+    public function getOAuthError() {
+        $error = $_SESSION['oauth_error'] ?? null;
+        
+        if ($error) {
+            unset($_SESSION['oauth_error']);
+            $this->response(['error' => $error]);
+        } else {
+            $this->response(['error' => null]);
+        }
+    }
 
     /**
      * POST /api.php?action=logout

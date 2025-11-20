@@ -2,14 +2,23 @@
 -- Generated: November 19, 2025
 -- Includes all features: sharing, authentication, image manipulation
 
--- Users Table
+-- Users Table (with OAuth support)
 CREATE TABLE IF NOT EXISTS `users` (
   `id` int NOT NULL AUTO_INCREMENT,
   `username` varchar(50) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `password_hash` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `email` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `password_hash` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `oauth_provider` varchar(50) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `oauth_id` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `oauth_token` text COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `oauth_refresh_token` text COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `avatar_url` varchar(500) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `last_login` datetime DEFAULT NULL,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `username` (`username`)
+  UNIQUE KEY `username` (`username`),
+  UNIQUE KEY `oauth_provider_id` (`oauth_provider`, `oauth_id`),
+  KEY `idx_email` (`email`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Folders Table

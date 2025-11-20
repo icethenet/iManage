@@ -1,0 +1,83 @@
+<?php
+/**
+ * OAuth Configuration
+ * Cross-Platform (Windows/Linux/macOS)
+ * 
+ * SETUP INSTRUCTIONS:
+ * 1. Copy this file to config/oauth.php
+ * 2. Register your app with each provider
+ * 3. Fill in your client_id and client_secret
+ * 4. Set your redirect_uri (must match registered callback URL)
+ */
+
+return [
+    // Your application's base URL
+    'app_url' => 'http://localhost/imanage/public',
+    
+    // OAuth callback endpoint (will be: {app_url}/oauth-callback.php)
+    'callback_path' => '/oauth-callback.php',
+    
+    // Google OAuth Configuration
+    // Get credentials: https://console.developers.google.com
+    'google' => [
+        'enabled' => false, // Set to true after configuration
+        'client_id' => 'YOUR_GOOGLE_CLIENT_ID',
+        'client_secret' => 'YOUR_GOOGLE_CLIENT_SECRET',
+        'redirect_uri' => 'http://localhost/imanage/public/oauth-callback.php?provider=google',
+        'scopes' => ['email', 'profile'],
+        'auth_url' => 'https://accounts.google.com/o/oauth2/v2/auth',
+        'token_url' => 'https://oauth2.googleapis.com/token',
+        'user_info_url' => 'https://www.googleapis.com/oauth2/v2/userinfo',
+    ],
+    
+    // Facebook OAuth Configuration
+    // Get credentials: https://developers.facebook.com
+    'facebook' => [
+        'enabled' => false, // Set to true after configuration
+        'client_id' => 'YOUR_FACEBOOK_APP_ID',
+        'client_secret' => 'YOUR_FACEBOOK_APP_SECRET',
+        'redirect_uri' => 'http://localhost/imanage/public/oauth-callback.php?provider=facebook',
+        'scopes' => ['email', 'public_profile'],
+        'auth_url' => 'https://www.facebook.com/v18.0/dialog/oauth',
+        'token_url' => 'https://graph.facebook.com/v18.0/oauth/access_token',
+        'user_info_url' => 'https://graph.facebook.com/v18.0/me',
+    ],
+    
+    // GitHub OAuth Configuration
+    // Get credentials: https://github.com/settings/developers
+    'github' => [
+        'enabled' => false, // Set to true after configuration
+        'client_id' => 'YOUR_GITHUB_CLIENT_ID',
+        'client_secret' => 'YOUR_GITHUB_CLIENT_SECRET',
+        'redirect_uri' => 'http://localhost/imanage/public/oauth-callback.php?provider=github',
+        'scopes' => ['user:email', 'read:user'],
+        'auth_url' => 'https://github.com/login/oauth/authorize',
+        'token_url' => 'https://github.com/login/oauth/access_token',
+        'user_info_url' => 'https://api.github.com/user',
+        'user_email_url' => 'https://api.github.com/user/emails',
+    ],
+    
+    // Microsoft OAuth Configuration
+    // Get credentials: https://portal.azure.com
+    'microsoft' => [
+        'enabled' => false, // Set to true after configuration
+        'client_id' => 'YOUR_MICROSOFT_CLIENT_ID',
+        'client_secret' => 'YOUR_MICROSOFT_CLIENT_SECRET',
+        'redirect_uri' => 'http://localhost/imanage/public/oauth-callback.php?provider=microsoft',
+        'scopes' => ['openid', 'profile', 'email'],
+        'auth_url' => 'https://login.microsoftonline.com/common/oauth2/v2.0/authorize',
+        'token_url' => 'https://login.microsoftonline.com/common/oauth2/v2.0/token',
+        'user_info_url' => 'https://graph.microsoft.com/v1.0/me',
+    ],
+    
+    // Session settings
+    'session' => [
+        'state_key' => 'oauth_state',
+        'return_url_key' => 'oauth_return_url',
+    ],
+    
+    // Account creation settings
+    'auto_create_accounts' => true, // Auto-create account on first OAuth login
+    'require_email_verification' => false, // Require email verification for new accounts
+    'default_avatar' => true, // Use OAuth provider's avatar
+];

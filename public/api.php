@@ -153,6 +153,11 @@ try {
             $controller->checkStatus();
             break;
 
+        case 'get_oauth_error':
+            $controller = new UserController();
+            $controller->getOAuthError();
+            break;
+
         // Folder endpoints
         case 'list_folders':
             $controller = new FolderController();

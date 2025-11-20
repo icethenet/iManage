@@ -4,8 +4,16 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('registerForm')?.addEventListener('submit', handleRegister);
     document.getElementById('logout-link')?.addEventListener('click', handleLogout);
 
+    // Attach OAuth button listeners
+    document.querySelectorAll('.oauth-btn').forEach(btn => {
+        btn.addEventListener('click', handleOAuthLogin);
+    });
+
     // Check login status when the app loads
     checkLoginStatus();
+    
+    // Display OAuth error if present
+    displayOAuthError();
 });
 
 /**
@@ -133,4 +141,34 @@ function updateUIAfterLogout() {
     document.body.classList.add('logged-out');
     document.body.classList.remove('logged-in');
     document.getElementById('username-display').textContent = '';
+}
+
+/**
+ * Handle OAuth login button clicks
+ */
+function handleOAuthLogin(e) {
+    e.preventDefault();
+    const provider = e.currentTarget.dataset.provider;
+    const returnUrl = encodeURIComponent(window.location.pathname);
+    window.location.href = `oauth-login.php?provider=${provider}&return_url=${returnUrl}`;
+}
+
+/**
+ * Display OAuth error message if present in session
+ */
+async function displayOAuthError() {
+    try {
+        const response = await fetch(`${API_BASE}?action=get_oauth_error`);
+        const data = await response.json();
+        
+        if (data.error) {
+            const statusDiv = document.getElementById('loginStatus');
+            if (statusDiv) {
+                statusDiv.className = 'auth-status error';
+                statusDiv.textContent = data.error;
+            }
+        }
+    } catch (error) {
+        console.error('Error checking OAuth error:', error);
+    }
 }
