@@ -68,34 +68,20 @@
                     
                     <form id="uploadForm" class="upload-form">
                         <div class="form-group">
-                            <label for="imageFile">Select Image:</label>
-                            <div class="file-input-wrapper">
-                                <input type="file" id="imageFile" name="image" accept="image/*" required>
+                            <label for="imageFile">Select Images:</label>
+                            <div class="file-input-wrapper" id="dropZone">
+                                <input type="file" id="imageFile" name="images[]" accept="image/*" multiple>
                                 <div class="file-input-display">
                                     <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                         <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
                                         <polyline points="17 8 12 3 7 8"></polyline>
                                         <line x1="12" y1="3" x2="12" y2="15"></line>
                                     </svg>
-                                    <span class="file-name">Click to select image or drag and drop</span>
-                                    <small style="display: block; margin-top: 8px; color: #999;">JPG, PNG, GIF, WebP • Max 5MB</small>
+                                    <span class="file-name">Click to select images or drag and drop</span>
+                                    <small style="display: block; margin-top: 8px; color: #999;">Multiple files supported • JPG, PNG, GIF, WebP • Max 5MB each</small>
                                 </div>
+                                <div id="filePreview" class="file-preview"></div>
                             </div>
-                        </div>
-
-                        <div class="form-group">
-                            <label for="imageTitle">Title:</label>
-                            <input type="text" id="imageTitle" name="title" placeholder="Image title">
-                        </div>
-
-                        <div class="form-group">
-                            <label for="imageDescription">Description:</label>
-                            <textarea id="imageDescription" name="description" placeholder="Image description"></textarea>
-                        </div>
-
-                        <div class="form-group">
-                            <label for="imageTags">Tags:</label>
-                            <input type="text" id="imageTags" name="tags" placeholder="Separate tags with commas">
                         </div>
 
                         <div class="form-group">
@@ -103,6 +89,13 @@
                             <select id="imageFolder" name="folder">
                                 <option value="default">Default</option>
                             </select>
+                        </div>
+
+                        <div id="uploadProgress" class="upload-progress"></div>
+
+                        <button type="submit" class="btn btn-primary">Upload Images</button>
+                        <div id="uploadStatus" class="upload-status"></div>
+                    </form>
                         </div>
 
                         <!-- Hidden section to create a subfolder -->
@@ -114,12 +107,8 @@
                             <button type="button" id="createSubfolderBtn" class="btn btn-secondary btn-sm" style="margin-top: 10px;">Create Subfolder</button>
                             <div id="subfolderStatus" style="margin-top: 10px; font-size: 12px;"></div>
                         </div>
-
-                        <button type="submit" class="btn btn-primary">Upload Image</button>
-                    </form>
-
-                    <div id="uploadStatus" class="upload-status" style="display:none;"></div>
                 </div>
+            </section>
             </section>
 
             <!-- Folders View -->
@@ -328,6 +317,7 @@
     <script src="js/gallery.js"></script>
     <script src="js/editor.js"></script>
     <script src="js/auth.js"></script>
+    <script src="js/upload.js"></script>
 
     <script>
         /**
