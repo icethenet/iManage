@@ -276,7 +276,7 @@ async function uploadSingleFile(file, folder, bulkTitle, bulkDescription, bulkTa
     try {
         // Create FormData
         const formData = new FormData();
-        formData.append('image', file);
+        formData.append('image', file);  // Changed from 'images' to 'image' to match backend expectation
         formData.append('folder', folder);
         
         // Use bulk title if provided, otherwise use filename
