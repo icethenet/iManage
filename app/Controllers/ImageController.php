@@ -37,8 +37,10 @@ class ImageController {
 
             $page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
             $limit = isset($_GET['limit']) ? min((int)$_GET['limit'], 50) : ($this->config['pagination']['default_limit'] ?? 12);
-            $folder = isset($_GET['folder']) ? $_GET['folder'] : null;
-            $search = isset($_GET['search']) ? $_GET['search'] : null;
+            // Sanitize folder name to prevent path traversal
+            $folder = isset($_GET['folder']) ? preg_replace('/[^a-zA-Z0-9_\s-]/', '', $_GET['folder']) : null;
+            // Sanitize search query
+            $search = isset($_GET['search']) ? htmlspecialchars(trim($_GET['search']), ENT_QUOTES, 'UTF-8') : null;
 
             if ($page < 1) $page = 1;
             
@@ -203,10 +205,20 @@ class ImageController {
                 return;
             }
 
-            // Get form data
-            $title = $_POST['title'] ?? '';
-            $description = $_POST['description'] ?? '';
-            $tags = $_POST['tags'] ?? '';
+            // Get form data and sanitize
+            $title = htmlspecialchars(trim($_POST['title'] ?? ''), ENT_QUOTES, 'UTF-8');
+            $description = htmlspecialchars(trim($_POST['description'] ?? ''), ENT_QUOTES, 'UTF-8');
+            $tags = htmlspecialchars(trim($_POST['tags'] ?? ''), ENT_QUOTES, 'UTF-8');
+            
+            // Validate lengths
+            if (strlen($title) > 255) {
+                $this->error('Title is too long (max 255 characters)', 400);
+                return;
+            }
+            if (strlen($description) > 1000) {
+                $this->error('Description is too long (max 1000 characters)', 400);
+                return;
+            }
 
             $logDebug("Attempting to save image metadata to database.");
 
@@ -314,13 +326,26 @@ class ImageController {
             }
 
             $data = json_decode(file_get_contents('php://input'), true);
+            
+            // Sanitize inputs
+            $title = isset($data['title']) ? htmlspecialchars(trim($data['title']), ENT_QUOTES, 'UTF-8') : $image['title'];
+            $description = isset($data['description']) ? htmlspecialchars(trim($data['description']), ENT_QUOTES, 'UTF-8') : $image['description'];
+            $tags = isset($data['tags']) ? htmlspecialchars(trim($data['tags']), ENT_QUOTES, 'UTF-8') : $image['tags'];
+            $shared = isset($data['shared']) ? (bool)$data['shared'] : $image['shared'];
+            $folder = isset($data['folder']) ? preg_replace('/[^a-zA-Z0-9_\s-]/', '', $data['folder']) : $image['folder'];
+            
+            // Validate lengths
+            if (strlen($title) > 255 || strlen($description) > 1000) {
+                $this->error('Input too long', 400);
+                return;
+            }
 
             $this->imageModel->update($id, [
-                'title' => $data['title'] ?? $image['title'],
-                'description' => $data['description'] ?? $image['description'],
-                'tags' => $data['tags'] ?? $image['tags'],
-                'shared' => $data['shared'] ?? $image['shared'],
-                'folder' => $data['folder'] ?? $image['folder']
+                'title' => $title,
+                'description' => $description,
+                'tags' => $tags,
+                'shared' => $shared,
+                'folder' => $folder
             ]);
 
             $updatedImage = $this->imageModel->getById($id);

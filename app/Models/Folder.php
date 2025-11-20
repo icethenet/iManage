@@ -87,5 +87,13 @@ class Folder {
         $result = $stmt->fetch(PDO::FETCH_ASSOC);
         return (int)$result['count'];
     }
+
+    /**
+     * Get total count of all folders
+     */
+    public function getTotalCount() {
+        $stmt = $this->db->query("SELECT COUNT(*) FROM {$this->table}");
+        return $stmt->fetchColumn();
+    }
 }
 

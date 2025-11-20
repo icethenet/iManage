@@ -34,9 +34,14 @@ header('X-Content-Type-Options: nosniff');
 header('X-Frame-Options: SAMEORIGIN');
 header('X-XSS-Protection: 1; mode=block');
 header('Referrer-Policy: strict-origin-when-cross-origin');
-header('Content-Security-Policy: default-src \'self\'; script-src \'self\'; style-src \'self\' \'unsafe-inline\';');
+header('Content-Security-Policy: default-src \'self\'; script-src \'self\' \'unsafe-inline\' https://cdn.jsdelivr.net; style-src \'self\' \'unsafe-inline\'; img-src \'self\' data: blob:; font-src \'self\';');
+header('Strict-Transport-Security: max-age=31536000; includeSubDomains');
 
-// Start session management
+// Start secure session management
+ini_set('session.cookie_httponly', 1);
+ini_set('session.cookie_secure', 1);
+ini_set('session.use_strict_mode', 1);
+ini_set('session.cookie_samesite', 'Strict');
 session_start();
 
 // Session timeout protection (30 minutes inactivity)
@@ -56,10 +61,19 @@ if (isset($_SESSION['user_id'])) {
 }
 
 
-// Set headers for CORS
-header('Access-Control-Allow-Origin: *');
+// Set headers for CORS (restrict to same origin for security)
+// Only allow CORS if specifically needed, otherwise keep same-origin policy
+$allowedOrigins = [
+    'http://localhost:8000',
+    'http://127.0.0.1:8000'
+];
+$origin = $_SERVER['HTTP_ORIGIN'] ?? '';
+if (in_array($origin, $allowedOrigins)) {
+    header('Access-Control-Allow-Origin: ' . $origin);
+    header('Access-Control-Allow-Credentials: true');
+}
 header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
-header('Access-Control-Allow-Headers: Content-Type, Authorization');
+header('Access-Control-Allow-Headers: Content-Type, X-CSRF-Token');
 
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     http_response_code(200);
@@ -71,9 +85,37 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
  * Query parameters determine the action
  */
 
-$action = isset($_GET['action']) ? $_GET['action'] : 'list';
+// Rate limiting check (basic implementation)
+function checkRateLimit() {
+    $key = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
+    $maxRequests = 100; // requests per minute
+    $window = 60; // seconds
+    
+    if (!isset($_SESSION['rate_limit'])) {
+        $_SESSION['rate_limit'] = [];
+    }
+    
+    $now = time();
+    $_SESSION['rate_limit'] = array_filter($_SESSION['rate_limit'], function($timestamp) use ($now, $window) {
+        return ($now - $timestamp) < $window;
+    });
+    
+    if (count($_SESSION['rate_limit']) >= $maxRequests) {
+        http_response_code(429);
+        header('Content-Type: application/json');
+        echo json_encode(['success' => false, 'error' => 'Rate limit exceeded. Please try again later.']);
+        exit;
+    }
+    
+    $_SESSION['rate_limit'][] = $now;
+}
+
+// Apply rate limiting
+checkRateLimit();
+
+$action = isset($_GET['action']) ? preg_replace('/[^a-z_]/', '', strtolower($_GET['action'])) : 'list';
 $id = isset($_GET['id']) ? intval($_GET['id']) : null;
-$name = isset($_GET['name']) ? $_GET['name'] : null;
+$name = isset($_GET['name']) ? preg_replace('/[^a-zA-Z0-9_-]/', '', $_GET['name']) : null;
 
 // (debug helpers removed)
 
@@ -183,6 +225,37 @@ try {
             $controller->deleteAccount();
             break;
 
+        // Admin endpoints
+        case 'is_admin':
+            $controller = new AdminController();
+            $controller->isAdmin();
+            break;
+
+        case 'admin_stats':
+            $controller = new AdminController();
+            $controller->getSystemStats();
+            break;
+
+        case 'admin_users':
+            $controller = new AdminController();
+            $controller->getUsersList();
+            break;
+
+        case 'admin_delete_user':
+            $controller = new AdminController();
+            $controller->deleteUser();
+            break;
+
+        case 'oauth_status':
+            $controller = new AdminController();
+            $controller->getOAuthStatus();
+            break;
+
+        case 'test_oauth_provider':
+            $controller = new AdminController();
+            $controller->testOAuthProvider();
+            break;
+
         // Folder endpoints
         case 'list_folders':
             $controller = new FolderController();
@@ -229,8 +302,10 @@ try {
 
     http_response_code(500);
     header('Content-Type: application/json');
+    // Don't expose internal error details in production
+    $errorMessage = (getenv('APP_ENV') === 'development') ? $e->getMessage() : 'An internal error occurred';
     echo json_encode([
         'success' => false,
-        'error' => $e->getMessage()
+        'error' => $errorMessage
     ]);
 }

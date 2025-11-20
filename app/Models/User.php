@@ -103,6 +103,11 @@ class User {
      * Update user's email
      */
     public function updateEmail($userId, $email) {
+        // Validate email format
+        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            throw new Exception('Invalid email format');
+        }
+        
         $stmt = $this->db->prepare("UPDATE users SET email = ? WHERE id = ?");
         return $stmt->execute([$email, $userId]);
     }
@@ -122,5 +127,21 @@ class User {
     public function delete($userId) {
         $stmt = $this->db->prepare("DELETE FROM users WHERE id = ?");
         return $stmt->execute([$userId]);
+    }
+
+    /**
+     * Get total count of users
+     */
+    public function getTotalCount() {
+        $stmt = $this->db->query("SELECT COUNT(*) FROM users");
+        return $stmt->fetchColumn();
+    }
+
+    /**
+     * Get all users with basic info
+     */
+    public function getAllUsers() {
+        $stmt = $this->db->query("SELECT id, username, email, created_at, last_login, oauth_provider FROM users ORDER BY created_at DESC");
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 }

@@ -15,8 +15,11 @@ class UserController {
     public function register() {
         $data = json_decode(file_get_contents('php://input'), true);
 
-        $username = $data['username'] ?? '';
+        $username = trim($data['username'] ?? '');
         $password = $data['password'] ?? '';
+        
+        // Sanitize username - only allow alphanumeric and underscores
+        $username = preg_replace('/[^a-zA-Z0-9_]/', '', $username);
 
         if (empty($username) || empty($password)) {
             $this->error('Username and password are required.', 400);
@@ -24,6 +27,16 @@ class UserController {
 
         if (strlen($password) < 8) {
             $this->error('Password must be at least 8 characters long.', 400);
+        }
+        
+        // Password strength validation
+        if (!preg_match('/[A-Z]/', $password) || !preg_match('/[a-z]/', $password) || !preg_match('/[0-9]/', $password)) {
+            $this->error('Password must contain at least one uppercase letter, one lowercase letter, and one number.', 400);
+        }
+        
+        // Check username length
+        if (strlen($username) < 3 || strlen($username) > 50) {
+            $this->error('Username must be between 3 and 50 characters.', 400);
         }
 
         if ($this->userModel->findByUsername($username)) {
@@ -71,8 +84,22 @@ class UserController {
     public function login() {
         $data = json_decode(file_get_contents('php://input'), true);
 
-        $username = $data['username'] ?? '';
+        $username = trim($data['username'] ?? '');
         $password = $data['password'] ?? '';
+        
+        // Rate limiting for login attempts
+        if (!isset($_SESSION['login_attempts'])) {
+            $_SESSION['login_attempts'] = [];
+        }
+        
+        $now = time();
+        $_SESSION['login_attempts'] = array_filter($_SESSION['login_attempts'], function($timestamp) use ($now) {
+            return ($now - $timestamp) < 300; // 5 minute window
+        });
+        
+        if (count($_SESSION['login_attempts']) >= 5) {
+            $this->error('Too many login attempts. Please try again in 5 minutes.', 429);
+        }
 
         if (empty($username) || empty($password)) {
             $this->error('Username and password are required.', 400);
@@ -81,9 +108,17 @@ class UserController {
         $user = $this->userModel->findByUsername($username);
 
         if ($user && password_verify($password, $user['password_hash'])) {
+            // Clear login attempts on successful login
+            $_SESSION['login_attempts'] = [];
+            
+            // Regenerate session ID to prevent session fixation
+            session_regenerate_id(true);
+            
             // Start session and store user data
             $_SESSION['user_id'] = $user['id'];
             $_SESSION['username'] = $user['username'];
+            $_SESSION['ip_address'] = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
+            $_SESSION['user_agent'] = $_SERVER['HTTP_USER_AGENT'] ?? 'unknown';
 
             $this->response([
                 'success' => true, 
@@ -94,6 +129,10 @@ class UserController {
                 ]
             ]);
         } else {
+            // Track failed login attempt
+            $_SESSION['login_attempts'][] = time();
+            
+            // Use same error message to prevent username enumeration
             $this->error('Invalid username or password.', 401); // 401 Unauthorized
         }
     }
@@ -178,15 +217,28 @@ class UserController {
      */
     public function updateEmail() {
         if (!isset($_SESSION['user_id'])) {
-            $this->error('Not logged in', 401);
+            $this->error('Not authenticated', 401);
             return;
         }
 
         $data = json_decode(file_get_contents('php://input'), true);
-        $email = $data['email'] ?? '';
+        $email = trim($data['email'] ?? '');
 
         if (empty($email)) {
             $this->error('Email is required', 400);
+            return;
+        }
+        
+        // Validate email format
+        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            $this->error('Invalid email format', 400);
+            return;
+        }
+        
+        // Check if email is already in use by another user
+        $existingUser = $this->userModel->findByEmail($email);
+        if ($existingUser && $existingUser['id'] !== $_SESSION['user_id']) {
+            $this->error('Email is already in use', 409);
             return;
         }
 

@@ -291,5 +291,22 @@ class Image {
         $result = $stmt->fetch(PDO::FETCH_ASSOC);
         return (int)($result['total'] ?? 0);
     }
+
+    /**
+     * Get total count of all images
+     */
+    public function getTotalCount() {
+        $stmt = $this->db->query("SELECT COUNT(*) FROM {$this->table}");
+        return $stmt->fetchColumn();
+    }
+
+    /**
+     * Get total storage used by all users (in bytes)
+     */
+    public function getTotalStorage() {
+        $stmt = $this->db->query("SELECT SUM(file_size) as total FROM {$this->table}");
+        $result = $stmt->fetch(PDO::FETCH_ASSOC);
+        return (int)($result['total'] ?? 0);
+    }
 }
 

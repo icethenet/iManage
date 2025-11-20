@@ -161,6 +161,10 @@ function switchView(view) {
         if (typeof loadSettings === 'function') {
             loadSettings();
         }
+    } else if (view === 'admin') {
+        if (typeof loadAdmin === 'function') {
+            loadAdmin();
+        }
     }
 }
 

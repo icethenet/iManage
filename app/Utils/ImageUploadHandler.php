@@ -49,6 +49,16 @@ class ImageUploadHandler {
         // Validate by MIME first (recommended), then fallback to extension check.
         $fileMime = $file['type'];
         $fileExt = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
+        
+        // Additional security: Verify actual file content (magic bytes)
+        $finfo = new finfo(FILEINFO_MIME_TYPE);
+        $detectedMime = $finfo->file($file['tmp_name']);
+        
+        // Whitelist of truly safe image MIME types
+        $safeMimeTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+        if (!in_array($detectedMime, $safeMimeTypes, true)) {
+            $errors[] = 'File content does not match allowed image types. Detected: ' . htmlspecialchars($detectedMime);
+        }
 
         $mimeOk = empty($allowedMimes) || in_array($fileMime, $allowedMimes, true);
         $extOk = empty($allowedExts) || in_array($fileExt, $allowedExts, true);
