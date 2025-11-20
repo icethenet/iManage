@@ -588,12 +588,15 @@ function importSystemSettings() {
 
 // Load activity log
 async function loadActivityLog() {
+    console.log('loadActivityLog() called');
     const activityLog = document.getElementById('activityLog');
     
     if (!activityLog) {
         console.error('Activity log element not found');
         return;
     }
+    
+    console.log('Activity log element found, loading data...');
     
     // Mock activity data (TODO: Implement real activity tracking)
     const activities = [
@@ -612,7 +615,9 @@ async function loadActivityLog() {
         </div>`;
     });
     
+    console.log('Setting activity log HTML, length:', html.length);
     activityLog.innerHTML = html || '<p style="color: #666;">No recent activity.</p>';
+    console.log('Activity log updated successfully');
 }
 
 // Helper function to escape HTML
