@@ -29,20 +29,31 @@ spl_autoload_register('autoload');
 error_reporting(E_ALL);
 ini_set('display_errors', 0);
 
-// Set security headers (prevents XSS, MIME sniffing, clickjacking)
+// Configure secure session settings BEFORE starting session
+@ini_set('session.cookie_httponly', '1');
+// Only set secure flag if using HTTPS
+if (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') {
+    @ini_set('session.cookie_secure', '1');
+}
+@ini_set('session.use_strict_mode', '1');
+// SameSite setting might not be supported in all PHP versions
+if (PHP_VERSION_ID >= 70300) {
+    @ini_set('session.cookie_samesite', 'Lax');
+}
+
+// Start session
+session_start();
+
+// Set security headers AFTER session (prevents XSS, MIME sniffing, clickjacking)
 header('X-Content-Type-Options: nosniff');
 header('X-Frame-Options: SAMEORIGIN');
 header('X-XSS-Protection: 1; mode=block');
 header('Referrer-Policy: strict-origin-when-cross-origin');
 header('Content-Security-Policy: default-src \'self\'; script-src \'self\' \'unsafe-inline\' https://cdn.jsdelivr.net; style-src \'self\' \'unsafe-inline\'; img-src \'self\' data: blob:; font-src \'self\';');
-header('Strict-Transport-Security: max-age=31536000; includeSubDomains');
-
-// Start secure session management
-ini_set('session.cookie_httponly', 1);
-ini_set('session.cookie_secure', 1);
-ini_set('session.use_strict_mode', 1);
-ini_set('session.cookie_samesite', 'Strict');
-session_start();
+// Only set HSTS if using HTTPS
+if (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') {
+    header('Strict-Transport-Security: max-age=31536000; includeSubDomains');
+}
 
 // Session timeout protection (30 minutes inactivity)
 $sessionTimeout = 30 * 60;
