@@ -59,6 +59,10 @@ async function handleLogin(e) {
             statusDiv.className = 'auth-status success';
             statusDiv.textContent = 'Login successful! Redirecting...';
             updateUIAfterLogin(result.user);
+            // Check admin access
+            if (typeof checkAdminAccess === 'function') {
+                checkAdminAccess();
+            }
             // Redirect to gallery after a short delay
             setTimeout(() => {
                 switchView('gallery');
