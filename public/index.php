@@ -732,8 +732,8 @@
                     <!-- Settings Tab -->
                     <div id="admin-tab-settings" class="admin-tab-content">
                     <!-- System Settings Section -->
-                    <div class="admin-section">
-                        <h3>⚙️ System Settings</h3>
+                    
+                    <!-- System Health -->
                     <div class="admin-section">
                         <h3>🏥 System Health</h3>
                         
