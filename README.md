@@ -32,95 +32,137 @@ A powerful, mobile-first image management system with advanced editing capabilit
 - 📦 **Auto Thumbnails** - Automatic thumbnail generation for fast loading
 - 🎭 **OAuth Integration** - Support for Google, Facebook, GitHub, Microsoft login
 
-## 🚀 Quick Start
+## 🚀 Quick Start & Installation
 
 ### Requirements
-- PHP 8.0 or higher
+- PHP 8.0+ (GD extension enabled)
 - MySQL 5.7+ or MariaDB 10.3+
-- Apache/Nginx with mod_rewrite
-- GD Library (for image manipulation)
+- Apache (mod_rewrite) or Nginx equivalent rewrite rules
+- Works on Windows, Linux, macOS
 
-### Installation
+### Option 1: Web Installer (Recommended)
+1. Clone repo:
+   ```bash
+   git clone https://github.com/icethenet/iManage.git
+   cd iManage
+   ```
+2. Point your web server's document root to `public/`.
+3. Navigate to:
+   ```
+   http://localhost/imanage/public/install.php
+   ```
+4. Step 1 – Database Connection:
+   - Host: `localhost`
+   - User: `root` (or your DB user)
+   - Password: (your password)
+   - Click "Test Connection & Continue".
+5. Step 2 – Create Database:
+   - Database name: `imanage` (or your choice)
+   - (Optional) Include sample data.
+   - Wizard creates tables, default folders, admin user.
+6. Step 3 – Verify:
+   - Wizard confirms schema/tables.
+   - Click "Complete Installation".
+7. First Login:
+   - Visit `http://localhost/imanage/public/`
+   - Username: `admin` / Password: `admin123` (change immediately!)
 
-**Option 1: Web Installer (Recommended)**
+### Option 2: Manual Installation
 ```bash
-# Clone the repository
-git clone https://github.com/icethenet/iManage.git
-cd iManage
+# Create database
+mysql -u root -p -e "CREATE DATABASE imanage CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
 
-# Configure your web server to point to the 'public' directory
-# Navigate to: http://localhost/install.php
-# Follow the installation wizard
-```
-
-**Option 2: Manual Setup**
-```bash
-# 1. Clone and configure database
-git clone https://github.com/icethenet/iManage.git
-cd iManage
-
-# 2. Create database
-mysql -u root -p
-CREATE DATABASE imanage CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-exit;
-
-# 3. Import schema
+# Import base schema
 mysql -u root -p imanage < database/schema.sql
 
-# 4. Configure database connection
+# (Optional) Run additional migrations
+mysql -u root -p imanage < database/migrations/add_share_token_column.sql 2>/dev/null || true
+mysql -u root -p imanage < database/migrations/add_oauth_support.sql 2>/dev/null || true
+
+# Configure database connection
 cp config/database.php.example config/database.php
-# Edit config/database.php with your credentials
-
-# 5. Set permissions
-chmod 755 public/uploads
-chmod 755 logs
-
-# 6. Configure web server
-# Point document root to: /path/to/iManage/public
+# Edit credentials inside config/database.php
 ```
 
-### Default Login
-- **Username:** `admin`
-- **Password:** `admin123`
-- ⚠️ **Change immediately after first login!**
+### File/Directory Permissions
+Windows (PowerShell as Administrator):
+```powershell
+icacls "public\uploads" /grant "NT AUTHORITY\SYSTEM:(OI)(CI)F" /T
+icacls "logs" /grant "NT AUTHORITY\SYSTEM:(OI)(CI)F" /T
+```
+Linux/macOS:
+```bash
+sudo chmod -R 775 public/uploads
+sudo chown -R www-data:www-data public/uploads
+sudo chmod -R 775 logs
+sudo chown -R www-data:www-data logs
+# Replace www-data with apache/nginx user if needed
+```
+
+### Post-Installation Checklist
+1. Change admin password immediately.
+2. (Optional) Enable OAuth providers (see below).
+3. Upload a test image and verify manipulation tools.
+4. Test share link creation and public access.
+5. Back up database and `public/uploads/` regularly.
+
+### Verification & Test Scripts
+```bash
+php tools/test_schema.php            # Validate DB schema
+php tools/test_security_simple.php   # Basic security checks
+php tools/test_share_link.php        # Share link functionality
+php tools/verify_crop_tool.php       # Crop tool validation
+```
 
 ### OAuth Social Login (Optional)
+```bash
+cp config/oauth.php.example config/oauth.php
+mysql -u root -p imanage < database/migrations/add_oauth_support.sql
+```
+Then add provider keys to `config/oauth.php` and set `'enabled' => true`. Full guide: [OAuth Setup](docs/OAUTH_SETUP.md).
 
-To enable social login with Google, Facebook, GitHub, or Microsoft:
+### Troubleshooting
+Problem: "Schema file not found" → Verify `database/schema.sql` exists.
+Problem: "Connection failed" → Check MySQL service + credentials (`mysql -u root -p`).
+Problem: "Permission denied on uploads" → Re-run permission commands above.
+Problem: "share_token column not found" → Run `php tools/add_share_token_column.php`.
+Problem: "Can't save manipulated images" → Run `php tools/check_file_paths.php` and verify permissions.
+Problem: OAuth redirect loop → Confirm `state` parameter stored in session and callback domain matches provider configuration.
 
-1. **Copy OAuth configuration:**
-   ```bash
-   cp config/oauth.php.example config/oauth.php
-   ```
+### Quick Reference
+| Task | Command/URL |
+|------|-------------|
+| Web Installer | `http://localhost/imanage/public/install.php` |
+| Login | `http://localhost/imanage/public/` |
+| Test Schema | `php tools/test_schema.php` |
+| Test Security | `php tools/test_security_simple.php` |
+| Add Share Column | `php tools/add_share_token_column.php` |
+| Backup DB | `mysqldump -u root -p imanage > backup.sql` |
+| Restore DB | `mysql -u root -p imanage < backup.sql` |
+| Verify Crop Tool | `php tools/verify_crop_tool.php` |
 
-2. **Run database migration:**
-   ```bash
-   mysql -u root -p imanage < database/migrations/add_oauth_support.sql
-   ```
+### Database & Schema Notes
+Recent additions include share token support and OAuth tables (see `database/migrations/`). Ensure migrations run after base schema import when enabling optional features.
 
-3. **Register your app with providers and add credentials to `config/oauth.php`**
-
-4. **Enable providers by setting `'enabled' => true`**
-
-See **[OAuth Setup Guide](docs/OAUTH_SETUP.md)** for detailed instructions.
+### Default Admin Credentials
+`admin` / `admin123` (change immediately). Use the settings area to update password.
 
 ## 📖 Documentation
 
 ### Main Guides
-- **[Installation Guide](INSTALLATION.md)** - Detailed setup instructions
-- **[Cross-Platform Guide](docs/CROSS_PLATFORM.md)** - Windows/Linux/macOS specifics
-- **[Database Documentation](database/README.md)** - Schema and maintenance
+- **Cross-Platform Guide** (`docs/CROSS_PLATFORM.md`) - OS specifics
+- **Database Documentation** (`database/README.md`) - Schema & maintenance
 
 ### Feature Documentation
-- **[Share Link Feature](docs/SHARE_LINK_FEATURE.md)** - Secure sharing system
-- **[Crop Tool Guide](CROP_TOOL_QUICKSTART.md)** - Interactive cropping tutorial
-- **[Security Overview](docs/SECURITY_HARDENING_SUMMARY.md)** - Security features
-- **[OAuth Setup Guide](docs/OAUTH_SETUP.md)** - Social login configuration
+- **Share Link Feature** (`docs/SHARE_LINK_FEATURE.md`) - Public sharing system
+- **Crop Tool Guide** (`docs/CROP_TOOL_QUICKSTART.md`) - Cropping walkthrough
+- **Security Overview** (`docs/SECURITY_HARDENING_SUMMARY.md`) - Hardening summary
+- **OAuth Setup Guide** (`docs/OAUTH_SETUP.md`) - Provider configuration
 
 ### Release Notes
-- **[Mobile-First CSS](MOBILEFIRST.txt)** - Responsive design implementation
-- **[Security Fixes](SECURITY_FIX_NOV_2025.txt)** - November 2025 security updates
-- **[Platform Compatibility](PLATFORM_COMPATIBILITY.txt)** - Cross-platform notes
+- **Mobile-First CSS** (`docs/release-notes/MOBILEFIRST.txt`)
+- **Security Fixes (Nov 2025)** (`docs/release-notes/SECURITY_FIX_NOV_2025.txt`)
+- **Platform Compatibility** (`docs/release-notes/PLATFORM_COMPATIBILITY.txt`)
 
 ## 🏗️ Architecture
 
@@ -268,6 +310,7 @@ For issues, questions, or suggestions:
 ## 🗺️ Roadmap
 
 - [x] OAuth 2.0 social login (Google, Facebook, GitHub, Microsoft)
+- [x] Two-factor authentication (2FA)
 - [ ] Batch image operations
 - [ ] Image metadata (EXIF) display
 - [ ] Advanced filters (blur, sepia, vignette)
@@ -275,7 +318,6 @@ For issues, questions, or suggestions:
 - [ ] Progressive Web App (PWA)
 - [ ] Video thumbnail support
 - [ ] Multi-language support
-- [ ] Two-factor authentication (2FA)
 
 ---
 
