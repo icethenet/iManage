@@ -69,6 +69,15 @@ if (isset($_SESSION['last_activity']) && time() - $_SESSION['last_activity'] > $
 }
 if (isset($_SESSION['user_id'])) {
     $_SESSION['last_activity'] = time();
+    
+    // Update active_sessions table with last activity
+    try {
+        $db = Database::getInstance();
+        $stmt = $db->prepare("UPDATE active_sessions SET last_activity = NOW() WHERE session_id = ?");
+        $stmt->execute([session_id()]);
+    } catch (Exception $e) {
+        error_log("Failed to update session activity: " . $e->getMessage());
+    }
 }
 
 
@@ -236,6 +245,32 @@ try {
             $controller->deleteAccount();
             break;
 
+        // 2FA endpoints
+        case 'get_2fa_status':
+            $controller = new UserController();
+            $controller->get2FAStatus();
+            break;
+
+        case 'generate_2fa_secret':
+            $controller = new UserController();
+            $controller->generate2FASecret();
+            break;
+
+        case 'enable_2fa':
+            $controller = new UserController();
+            $controller->enable2FA();
+            break;
+
+        case 'disable_2fa':
+            $controller = new UserController();
+            $controller->disable2FA();
+            break;
+
+        case 'regenerate_backup_codes':
+            $controller = new UserController();
+            $controller->regenerateBackupCodes();
+            break;
+
         // Admin endpoints
         case 'is_admin':
             $controller = new AdminController();
@@ -286,15 +321,41 @@ try {
             exit;
 
         case 'admin_active_sessions':
-            // Return mock session data (TODO: implement real session tracking)
-            header('Content-Type: application/json');
-            echo json_encode([
-                'success' => true,
-                'data' => []
-            ]);
-            exit;
+            $controller = new AdminController();
+            $controller->getActiveSessions();
+            break;
 
-        case 'oauth_status':
+        case 'admin_failed_logins':
+            $controller = new AdminController();
+            $controller->getFailedLogins();
+            break;
+
+        case 'admin_ip_blacklist':
+            $controller = new AdminController();
+            $controller->getIpBlacklist();
+            break;
+
+        case 'admin_ip_whitelist':
+            $controller = new AdminController();
+            $controller->getIpWhitelist();
+            break;
+
+        case 'admin_add_ip':
+            $controller = new AdminController();
+            $controller->addIpToList();
+            break;
+
+        case 'admin_remove_ip':
+            $controller = new AdminController();
+            $controller->removeIpFromList();
+            break;
+
+        case 'admin_security_audit':
+            $controller = new AdminController();
+            $controller->getSecurityAudit();
+            break;
+
+        case 'admin_oauth_status':
             $controller = new AdminController();
             $controller->getOAuthStatus();
             break;

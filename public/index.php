@@ -21,6 +21,7 @@
                 <a href="#" class="nav-link active" data-view="gallery">Gallery</a>
                 <a href="#" class="nav-link" data-view="upload">Upload</a>
                 <a href="#" class="nav-link" data-view="folders">Folders</a>
+                <a href="#" class="nav-link user-only" data-view="settings">Settings</a>
                 <a href="#" class="nav-link admin-only" data-view="admin" style="display: none;">Admin</a>
             </div>
             <div class="nav-left user-is-logged-out">
@@ -198,6 +199,166 @@
                 </div>
             </section>
 
+            <!-- Settings View (User Profile & 2FA) -->
+            <section id="settings-view" class="view">
+                <div class="settings-container">
+                    <h2>Account Settings</h2>
+                    
+                    <!-- Profile Information -->
+                    <div class="setting-section">
+                        <h3>Profile Information</h3>
+                        <div class="setting-content">
+                            <div class="profile-info">
+                                <div class="profile-info-item">
+                                    <span class="info-label">Username</span>
+                                    <span class="info-value" id="profileUsername">-</span>
+                                </div>
+                                <div class="profile-info-item">
+                                    <span class="info-label">Email</span>
+                                    <span class="info-value" id="profileEmail">-</span>
+                                </div>
+                                <div class="profile-info-item">
+                                    <span class="info-label">Member Since</span>
+                                    <span class="info-value" id="profileMemberSince">-</span>
+                                </div>
+                                <div class="profile-info-item">
+                                    <span class="info-label">Last Login</span>
+                                    <span class="info-value" id="profileLastLogin">-</span>
+                                </div>
+                                <div class="profile-info-item">
+                                    <span class="info-label">Login Provider</span>
+                                    <span class="info-value" id="profileProvider">-</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Update Email -->
+                    <div class="setting-section">
+                        <h3>Update Email</h3>
+                        <div class="setting-content">
+                            <form id="updateEmailForm">
+                                <div class="form-group">
+                                    <label for="newEmail">New Email Address</label>
+                                    <input type="email" id="newEmail" name="newEmail" required>
+                                </div>
+                                <button type="submit" class="btn btn-primary">Update Email</button>
+                            </form>
+                        </div>
+                    </div>
+
+                    <!-- Change Password -->
+                    <div class="setting-section">
+                        <h3>Change Password</h3>
+                        <div class="setting-content">
+                            <form id="changePasswordForm">
+                                <div class="form-group">
+                                    <label for="currentPassword">Current Password</label>
+                                    <input type="password" id="currentPassword" name="currentPassword" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="newPassword">New Password</label>
+                                    <input type="password" id="newPassword" name="newPassword" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="confirmPassword">Confirm New Password</label>
+                                    <input type="password" id="confirmPassword" name="confirmPassword" required>
+                                </div>
+                                <button type="submit" class="btn btn-primary">Change Password</button>
+                            </form>
+                        </div>
+                    </div>
+
+                    <!-- Two-Factor Authentication -->
+                    <div class="setting-section">
+                        <h3>Two-Factor Authentication (2FA)</h3>
+                        <div class="setting-content">
+                            <div id="2fa-status">
+                                <p>Loading 2FA status...</p>
+                            </div>
+                            
+                            <!-- 2FA Setup Area (hidden by default) -->
+                            <div id="2fa-setup" style="display: none;">
+                                <div class="form-group">
+                                    <label>Choose 2FA Method</label>
+                                    <select id="2fa-method" class="form-control">
+                                        <option value="totp">Authenticator App (Google Authenticator, Authy, etc.)</option>
+                                        <option value="email">Email Code</option>
+                                    </select>
+                                </div>
+                                
+                                <div id="totp-setup" style="display: none;">
+                                    <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 15px 0;">
+                                        <h4>Step 1: Scan QR Code</h4>
+                                        <div style="text-align: center; margin: 15px 0;">
+                                            <img id="qr-code" src="" alt="QR Code" style="max-width: 200px;">
+                                        </div>
+                                        <p style="font-size: 12px; color: #666;">Or manually enter this secret key:</p>
+                                        <code id="secret-key" style="display: block; background: #fff; padding: 10px; border-radius: 4px; text-align: center; font-size: 14px; letter-spacing: 2px;"></code>
+                                        
+                                        <h4 style="margin-top: 20px;">Step 2: Enter Verification Code</h4>
+                                        <input type="text" id="totp-verify-code" class="form-control" placeholder="Enter 6-digit code" maxlength="6" style="text-align: center; font-size: 18px; letter-spacing: 4px;">
+                                    </div>
+                                    
+                                    <div style="background: #fff3cd; padding: 15px; border-radius: 8px; margin: 15px 0; border-left: 4px solid #ffc107;">
+                                        <h4>Backup Codes</h4>
+                                        <p style="margin: 10px 0; font-size: 14px;">Save these backup codes in a safe place. Each can be used once if you lose access to your authenticator app.</p>
+                                        <div id="backup-codes" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-family: monospace; font-size: 14px;"></div>
+                                        <button type="button" class="btn btn-sm" onclick="downloadBackupCodes()" style="margin-top: 10px;">📥 Download Codes</button>
+                                    </div>
+                                </div>
+                                
+                                <div id="email-setup" style="display: none;">
+                                    <div style="background: #e3f2fd; padding: 20px; border-radius: 8px; margin: 15px 0; border-left: 4px solid #2196F3;">
+                                        <p style="margin: 0;">📧 A 6-digit verification code will be sent to your email address whenever you log in.</p>
+                                        <p style="margin: 10px 0 0 0; font-weight: 600;">Email: <span id="user-email-display">loading...</span></p>
+                                    </div>
+                                </div>
+                                
+                                <div style="display: flex; gap: 10px; margin-top: 20px;">
+                                    <button type="button" class="btn btn-primary" onclick="enable2FA()">✓ Enable 2FA</button>
+                                    <button type="button" class="btn btn-secondary" onclick="cancel2FASetup()">Cancel</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Account Statistics -->
+                    <div class="setting-section">
+                        <h3>Account Statistics</h3>
+                        <div class="setting-content">
+                            <div class="stats-grid">
+                                <div class="stat-card">
+                                    <div class="stat-value" id="statImages">0</div>
+                                    <div class="stat-label">Total Images</div>
+                                </div>
+                                <div class="stat-card">
+                                    <div class="stat-value" id="statFolders">0</div>
+                                    <div class="stat-label">Folders</div>
+                                </div>
+                                <div class="stat-card">
+                                    <div class="stat-value" id="statStorage">0 MB</div>
+                                    <div class="stat-label">Storage Used</div>
+                                </div>
+                                <div class="stat-card">
+                                    <div class="stat-value" id="statShared">0</div>
+                                    <div class="stat-label">Shared Images</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Danger Zone -->
+                    <div class="setting-section" style="border-left: 4px solid #dc3545;">
+                        <h3 style="color: #dc3545;">Danger Zone</h3>
+                        <div class="setting-content">
+                            <p style="color: #666; margin-bottom: 15px;">Once you delete your account, there is no going back. This will permanently delete all your images and data.</p>
+                            <button type="button" class="btn btn-danger" onclick="deleteAccount()">Delete My Account</button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
             <!-- Admin View -->
             <section id="admin-view" class="view">
                 <div class="admin-container">
@@ -211,7 +372,6 @@
                         <button class="admin-tab-btn" onclick="switchAdminTab('storage')">💾 Storage</button>
                         <button class="admin-tab-btn" onclick="switchAdminTab('oauth')">🔑 OAuth</button>
                         <button class="admin-tab-btn" onclick="switchAdminTab('settings')">⚙️ Settings</button>
-                        <button class="admin-tab-btn" onclick="switchAdminTab('account')">👤 My Account</button>
                         <button class="admin-tab-btn" onclick="switchAdminTab('logs')">📋 Activity</button>
                     </div>
                     
@@ -439,7 +599,7 @@
                         <div id="tab-ip-management" class="security-tab-content">
                             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
                                 <h4>IP Access Control</h4>
-                                <button class="btn btn-sm" onclick="addIPRule()">➕ Add IP Rule</button>
+                                <button class="btn btn-sm" onclick="showAddIPModal()">➕ Add IP Rule</button>
                             </div>
                             
                             <div class="ip-management-grid">
@@ -456,6 +616,40 @@
                                         <p>Loading...</p>
                                     </div>
                                 </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Add IP Rule Modal -->
+                        <div id="addIPModal" class="modal" style="display: none;">
+                            <div class="modal-content" style="max-width: 500px;">
+                                <h3>Add IP Access Rule</h3>
+                                <form id="addIPForm" onsubmit="submitIPRule(event)">
+                                    <div class="form-group">
+                                        <label for="ipAddress">IP Address *</label>
+                                        <input type="text" id="ipAddress" class="form-control" 
+                                               placeholder="e.g., 192.168.1.100 or 10.0.0.0/24" required>
+                                        <small>Supports single IPs or CIDR notation</small>
+                                    </div>
+                                    
+                                    <div class="form-group">
+                                        <label for="ipType">Rule Type *</label>
+                                        <select id="ipType" class="form-control" required>
+                                            <option value="blacklist">🚫 Blacklist (Block Access)</option>
+                                            <option value="whitelist">✅ Whitelist (Allow Access)</option>
+                                        </select>
+                                    </div>
+                                    
+                                    <div class="form-group">
+                                        <label for="ipReason">Reason</label>
+                                        <input type="text" id="ipReason" class="form-control" 
+                                               placeholder="Optional reason for this rule">
+                                    </div>
+                                    
+                                    <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px;">
+                                        <button type="button" class="btn btn-secondary" onclick="closeAddIPModal()">Cancel</button>
+                                        <button type="submit" class="btn btn-primary">Add Rule</button>
+                                    </div>
+                                </form>
                             </div>
                         </div>
                         
@@ -1104,117 +1298,6 @@
                     </div>
                     </div><!-- End Settings Tab -->
 
-                    <!-- My Account Tab -->
-                    <div id="admin-tab-account" class="admin-tab-content">
-                        <div class="admin-section">
-                            <h2>👤 My Account</h2>
-                            <p style="margin-bottom: 20px; color: #666; font-size: 14px;">
-                                Manage your personal account settings and preferences.
-                            </p>
-
-                            <!-- Profile Information -->
-                            <div class="setting-section">
-                                <h3>Profile Information</h3>
-                                <div class="setting-content">
-                                    <div class="profile-info-grid">
-                                        <div class="profile-info-item">
-                                            <span class="info-label">Username</span>
-                                            <span class="info-value" id="profileUsername">-</span>
-                                        </div>
-                                        <div class="profile-info-item">
-                                            <span class="info-label">Email</span>
-                                            <span class="info-value" id="profileEmail">-</span>
-                                        </div>
-                                        <div class="profile-info-item">
-                                            <span class="info-label">Member Since</span>
-                                            <span class="info-value" id="profileMemberSince">-</span>
-                                        </div>
-                                        <div class="profile-info-item">
-                                            <span class="info-label">Last Login</span>
-                                            <span class="info-value" id="profileLastLogin">-</span>
-                                        </div>
-                                        <div class="profile-info-item">
-                                            <span class="info-label">Login Provider</span>
-                                            <span class="info-value" id="profileProvider">-</span>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Update Email -->
-                            <div class="setting-section">
-                                <h3>Update Email</h3>
-                                <div class="setting-content">
-                                    <form id="updateEmailForm">
-                                        <div class="form-group">
-                                            <label for="newEmail">New Email Address</label>
-                                            <input type="email" id="newEmail" name="newEmail" required>
-                                        </div>
-                                        <button type="submit" class="btn btn-primary">Update Email</button>
-                                    </form>
-                                </div>
-                            </div>
-
-                            <!-- Change Password -->
-                            <div class="setting-section">
-                                <h3>Change Password</h3>
-                                <div class="setting-content">
-                                    <form id="changePasswordForm">
-                                        <div class="form-group">
-                                            <label for="currentPassword">Current Password</label>
-                                            <input type="password" id="currentPassword" name="currentPassword" required>
-                                        </div>
-                                        <div class="form-group">
-                                            <label for="newPassword">New Password</label>
-                                            <input type="password" id="newPassword" name="newPassword" required>
-                                        </div>
-                                        <div class="form-group">
-                                            <label for="confirmPassword">Confirm New Password</label>
-                                            <input type="password" id="confirmPassword" name="confirmPassword" required>
-                                        </div>
-                                        <button type="submit" class="btn btn-primary">Change Password</button>
-                                    </form>
-                                </div>
-                            </div>
-
-                            <!-- Account Statistics -->
-                            <div class="setting-section">
-                                <h3>Account Statistics</h3>
-                                <div class="setting-content">
-                                    <div class="stats-grid">
-                                        <div class="stat-card">
-                                            <div class="stat-value" id="statImages">0</div>
-                                            <div class="stat-label">Total Images</div>
-                                        </div>
-                                        <div class="stat-card">
-                                            <div class="stat-value" id="statFolders">0</div>
-                                            <div class="stat-label">Folders</div>
-                                        </div>
-                                        <div class="stat-card">
-                                            <div class="stat-value" id="statStorage">0 MB</div>
-                                            <div class="stat-label">Storage Used</div>
-                                        </div>
-                                        <div class="stat-card">
-                                            <div class="stat-value" id="statShared">0</div>
-                                            <div class="stat-label">Shared Images</div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Danger Zone -->
-                            <div class="setting-section danger-zone">
-                                <h3>⚠️ Danger Zone</h3>
-                                <div class="setting-content">
-                                    <div class="danger-warning">
-                                        <p><strong>Warning:</strong> This action cannot be undone. All your images, folders, and data will be permanently deleted.</p>
-                                        <button id="deleteAccountBtn" class="btn btn-danger">Delete Account</button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div><!-- End My Account Tab -->
-
                     <!-- Activity Logs Tab -->
                     <div id="admin-tab-logs" class="admin-tab-content">
                     <!-- Activity Logs -->
@@ -1520,6 +1603,7 @@
     </script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <script src="js/settings.js"></script>
+    <script src="js/2fa.js"></script>
     <script src="js/admin.js"></script>
     <script src="js/admin-analytics.js"></script>
     <script src="js/admin-security.js"></script>

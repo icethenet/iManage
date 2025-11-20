@@ -230,11 +230,20 @@ function exportFailedLogins() {
 // Load IP management
 async function loadIPManagement() {
     try {
-        const response = await fetch('api.php?action=admin_ip_rules');
-        const data = await response.json();
+        // Add cache buster to force fresh data
+        const timestamp = new Date().getTime();
+        const [blacklistResponse, whitelistResponse] = await Promise.all([
+            fetch(`api.php?action=admin_ip_blacklist&_=${timestamp}`),
+            fetch(`api.php?action=admin_ip_whitelist&_=${timestamp}`)
+        ]);
         
-        if (data.success && data.data) {
-            renderIPLists(data.data.blacklist, data.data.whitelist);
+        const blacklistData = await blacklistResponse.json();
+        const whitelistData = await whitelistResponse.json();
+        
+        if (blacklistData.success && whitelistData.success) {
+            renderIPLists(blacklistData.data, whitelistData.data);
+        } else {
+            renderMockIPLists();
         }
     } catch (error) {
         console.error('Error loading IP rules:', error);
@@ -249,6 +258,10 @@ function renderIPLists(blacklist, whitelist) {
 
 function renderIPList(containerId, ips) {
     const container = document.getElementById(containerId);
+    
+    if (!container) {
+        return;
+    }
     
     if (ips.length === 0) {
         container.innerHTML = `<p style="color: #666;">No ${containerId.includes('black') ? 'blocked' : 'whitelisted'} IPs</p>`;
@@ -280,20 +293,31 @@ function renderMockIPLists() {
     renderIPLists(mockBlacklist, mockWhitelist);
 }
 
-// Add IP rule
-async function addIPRule() {
-    const ipAddress = prompt('Enter IP address (supports CIDR notation):');
-    if (!ipAddress) return;
+// Show Add IP Modal
+function showAddIPModal() {
+    document.getElementById('addIPModal').style.display = 'flex';
+    document.getElementById('ipAddress').focus();
+}
+
+// Close Add IP Modal
+function closeAddIPModal() {
+    document.getElementById('addIPModal').style.display = 'none';
+    document.getElementById('addIPForm').reset();
+}
+
+// Submit IP Rule
+async function submitIPRule(event) {
+    event.preventDefault();
     
-    const type = confirm('Blacklist (OK) or Whitelist (Cancel)?') ? 'blacklist' : 'whitelist';
-    const reason = prompt('Reason (optional):') || '';
+    const ipAddress = document.getElementById('ipAddress').value.trim();
+    const type = document.getElementById('ipType').value;
+    const reason = document.getElementById('ipReason').value.trim();
     
     try {
-        const response = await fetch('api.php', {
+        const response = await fetch('api.php?action=admin_add_ip', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                action: 'admin_add_ip_rule',
                 ip_address: ipAddress,
                 type: type,
                 reason: reason
@@ -303,8 +327,21 @@ async function addIPRule() {
         const data = await response.json();
         
         if (data.success) {
-            alert('✓ IP rule added successfully');
-            loadIPManagement();
+            closeAddIPModal();
+            
+            // Switch to IP Management tab first
+            if (currentSecurityTab !== 'ip-management') {
+                const ipManagementBtn = document.querySelector('button.security-tab[onclick*="ip-management"]');
+                if (ipManagementBtn) {
+                    ipManagementBtn.click();
+                }
+            }
+            
+            // Small delay to ensure database transaction completes and tab is visible
+            setTimeout(() => {
+                loadIPManagement();
+                alert('✓ IP rule added successfully');
+            }, 150);
         } else {
             alert('✗ Failed to add IP rule: ' + (data.error || 'Unknown error'));
         }
@@ -312,6 +349,11 @@ async function addIPRule() {
         console.error('Error adding IP rule:', error);
         alert('✗ Failed to add IP rule');
     }
+}
+
+// Keep old function for backward compatibility (now redirects to modal)
+async function addIPRule() {
+    showAddIPModal();
 }
 
 // Block IP
@@ -323,11 +365,10 @@ async function blockIP(ipAddress) {
     const reason = prompt('Reason for blocking:', 'Failed login attempts');
     
     try {
-        const response = await fetch('api.php', {
+        const response = await fetch('api.php?action=admin_add_ip', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                action: 'admin_add_ip_rule',
                 ip_address: ipAddress,
                 type: 'blacklist',
                 reason: reason || 'Failed login attempts'
@@ -355,12 +396,11 @@ async function removeIPRule(ruleId) {
     }
     
     try {
-        const response = await fetch('api.php', {
+        const response = await fetch('api.php?action=admin_remove_ip', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                action: 'admin_remove_ip_rule',
-                rule_id: ruleId
+                id: ruleId
             })
         });
         
@@ -842,7 +882,6 @@ async function compressImages() {
 
 // Helper functions
 function viewFile(fileId) {
-    console.log('View file:', fileId);
     alert('File viewer coming soon!');
 }
 

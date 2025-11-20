@@ -4,8 +4,6 @@
 
 // Switch admin tab
 function switchAdminTab(tabName) {
-    console.log('switchAdminTab called with:', tabName);
-    
     // Update tab buttons
     document.querySelectorAll('.admin-tab-btn').forEach(btn => {
         btn.classList.remove('active');
@@ -18,41 +16,35 @@ function switchAdminTab(tabName) {
     });
     
     const targetTab = document.getElementById(`admin-tab-${tabName}`);
-    console.log('Target tab element:', targetTab);
     
     if (targetTab) {
         targetTab.classList.add('active');
-        console.log('Active class added to:', `admin-tab-${tabName}`);
-        console.log('Tab classes:', targetTab.className);
-    } else {
-        console.error('Tab element not found:', `admin-tab-${tabName}`);
     }
     
     // Load tab-specific data
     if (tabName === 'overview' && typeof loadAnalytics === 'function') {
-        console.log('Loading overview with analytics...');
         loadAnalytics();
     } else if (tabName === 'users') {
-        console.log('Loading users list...');
         if (typeof loadUsersList === 'function') {
             loadUsersList();
-        } else {
-            console.error('loadUsersList function not found');
         }
-    } else if (tabName === 'security' && typeof loadActiveSessions === 'function') {
-        console.log('Loading security/sessions...');
-        loadActiveSessions();
+    } else if (tabName === 'security') {
+        if (typeof loadActiveSessions === 'function') {
+            loadActiveSessions();
+        }
+        if (typeof loadFailedLogins === 'function') {
+            loadFailedLogins();
+        }
+        if (typeof loadIPManagement === 'function') {
+            loadIPManagement();
+        }
     } else if (tabName === 'storage' && typeof analyzeStorage === 'function') {
-        console.log('Storage tab activated');
         // Storage tab loads on demand via buttons
     } else if (tabName === 'oauth') {
-        console.log('Checking OAuth providers...');
         checkOAuthProviders();
     } else if (tabName === 'account' && typeof loadSettings === 'function') {
-        console.log('Loading account settings...');
         loadSettings();
     } else if (tabName === 'logs') {
-        console.log('Loading activity log...');
         loadActivityLog();
     }
 }
@@ -105,19 +97,13 @@ async function loadAdmin() {
 
 // Load users list
 async function loadUsersList() {
-    console.log('loadUsersList() starting...');
     try {
-        console.log('Fetching admin_users...');
         const response = await fetch('api.php?action=admin_users');
-        console.log('Response received:', response.status);
         const data = await response.json();
-        
-        console.log('Users API response:', data);
         
         const usersList = document.getElementById('usersList');
         
         if (!data.success) {
-            console.error('API returned error:', data.error);
             usersList.innerHTML = `<p style="color: #dc3545;">Error: ${data.error || 'Failed to load users'}</p>`;
             return;
         }
@@ -177,7 +163,7 @@ document.addEventListener('DOMContentLoaded', function() {
 // Check OAuth provider configuration
 async function checkOAuthProviders() {
     try {
-        const response = await fetch('api.php?action=oauth_status');
+        const response = await fetch('api.php?action=admin_oauth_status');
         const data = await response.json();
         
         if (data.success) {
@@ -227,7 +213,6 @@ function viewUserDetails(userId, username) {
     const modal = confirm(`View details for user: ${username}?\n\nUser ID: ${userId}\n\nThis feature can be expanded to show:\n- Full user information\n- Image gallery\n- Upload history\n- Activity log\n- Edit user details\n\nWould you like to implement this feature?`);
     
     if (modal) {
-        console.log('User details view requested for:', userId, username);
         // TODO: Implement detailed user view
     }
 }
@@ -621,15 +606,11 @@ function importSystemSettings() {
 
 // Load activity log
 async function loadActivityLog() {
-    console.log('loadActivityLog() called');
     const activityLog = document.getElementById('activityLog');
     
     if (!activityLog) {
-        console.error('Activity log element not found');
         return;
     }
-    
-    console.log('Activity log element found, loading data...');
     
     // Mock activity data (TODO: Implement real activity tracking)
     const activities = [
@@ -648,9 +629,7 @@ async function loadActivityLog() {
         </div>`;
     });
     
-    console.log('Setting activity log HTML, length:', html.length);
     activityLog.innerHTML = html || '<p style="color: #666;">No recent activity.</p>';
-    console.log('Activity log updated successfully');
 }
 
 // Helper function to escape HTML
@@ -670,6 +649,24 @@ async function checkAdminAccess() {
             // Show admin link in navigation
             const adminLinks = document.querySelectorAll('.admin-only');
             adminLinks.forEach(link => {
+                link.style.display = 'inline-block';
+            });
+            
+            // Hide user-only links (like Settings) for admins
+            const userLinks = document.querySelectorAll('.user-only');
+            userLinks.forEach(link => {
+                link.style.display = 'none';
+            });
+        } else {
+            // Hide admin links for regular users
+            const adminLinks = document.querySelectorAll('.admin-only');
+            adminLinks.forEach(link => {
+                link.style.display = 'none';
+            });
+            
+            // Show user-only links for regular users
+            const userLinks = document.querySelectorAll('.user-only');
+            userLinks.forEach(link => {
                 link.style.display = 'inline-block';
             });
         }

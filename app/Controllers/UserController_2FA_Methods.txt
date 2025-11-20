@@ -1,0 +1,167 @@
+<?php
+/**
+ * Two-Factor Authentication Controller Methods
+ * Add these methods to UserController.php before the closing brace
+ */
+
+/**
+ * Get 2FA status for current user
+ */
+public function get2FAStatus() {
+    if (!isset($_SESSION['user_id'])) {
+        $this->error('Unauthorized', 401);
+    }
+    
+    $user = $this->userModel->findById($_SESSION['user_id']);
+    
+    if (!$user) {
+        $this->error('User not found', 404);
+    }
+    
+    $this->response([
+        'success' => true,
+        'data' => [
+            'enabled' => (bool)$user['two_factor_enabled'],
+            'method' => $user['two_factor_method']
+        ]
+    ]);
+}
+
+/**
+ * Generate 2FA secret and backup codes
+ */
+public function generate2FASecret() {
+    if (!isset($_SESSION['user_id'])) {
+        $this->error('Unauthorized', 401);
+    }
+    
+    require_once __DIR__ . '/../Utils/TwoFactorAuth.php';
+    
+    $user = $this->userModel->findById($_SESSION['user_id']);
+    $secret = TwoFactorAuth::generateSecret();
+    $backupCodes = TwoFactorAuth::generateBackupCodes();
+    $qrCodeUrl = TwoFactorAuth::getQRCodeUrl($user['username'], $secret);
+    
+    $this->response([
+        'success' => true,
+        'secret' => $secret,
+        'qr_code_url' => $qrCodeUrl,
+        'backup_codes' => $backupCodes
+    ]);
+}
+
+/**
+ * Enable 2FA for current user
+ */
+public function enable2FA() {
+    if (!isset($_SESSION['user_id'])) {
+        $this->error('Unauthorized', 401);
+    }
+    
+    require_once __DIR__ . '/../Utils/TwoFactorAuth.php';
+    
+    $data = json_decode(file_get_contents('php://input'), true);
+    $method = $data['method'] ?? 'totp';
+    $secret = $data['secret'] ?? '';
+    $backupCodes = $data['backup_codes'] ?? [];
+    
+    // Verify TOTP code if using authenticator app
+    if ($method === 'totp') {
+        $verificationCode = $data['verification_code'] ?? '';
+        
+        if (!TwoFactorAuth::verifyTOTP($secret, $verificationCode)) {
+            $this->error('Invalid verification code. Please try again.');
+        }
+    }
+    
+    // Hash backup codes before storing
+    $hashedBackupCodes = array_map(function($code) {
+        return password_hash($code, PASSWORD_DEFAULT);
+    }, $backupCodes);
+    
+    $db = Database::getInstance();
+    $stmt = $db->prepare("
+        UPDATE users 
+        SET two_factor_enabled = 1,
+            two_factor_method = ?,
+            two_factor_secret = ?,
+            two_factor_backup_codes = ?
+        WHERE id = ?
+    ");
+    $stmt->execute([
+        $method,
+        $secret,
+        json_encode($hashedBackupCodes),
+        $_SESSION['user_id']
+    ]);
+    
+    $this->response([
+        'success' => true,
+        'message' => '2FA enabled successfully'
+    ]);
+}
+
+/**
+ * Disable 2FA for current user
+ */
+public function disable2FA() {
+    if (!isset($_SESSION['user_id'])) {
+        $this->error('Unauthorized', 401);
+    }
+    
+    $db = Database::getInstance();
+    $stmt = $db->prepare("
+        UPDATE users 
+        SET two_factor_enabled = 0,
+            two_factor_method = NULL,
+            two_factor_secret = NULL,
+            two_factor_backup_codes = NULL
+        WHERE id = ?
+    ");
+    $stmt->execute([$_SESSION['user_id']]);
+    
+    $this->response([
+        'success' => true,
+        'message' => '2FA disabled successfully'
+    ]);
+}
+
+/**
+ * Regenerate backup codes
+ */
+public function regenerateBackupCodes() {
+    if (!isset($_SESSION['user_id'])) {
+        $this->error('Unauthorized', 401);
+    }
+    
+    require_once __DIR__ . '/../Utils/TwoFactorAuth.php';
+    
+    $user = $this->userModel->findById($_SESSION['user_id']);
+    
+    if (!$user['two_factor_enabled'] || $user['two_factor_method'] !== 'totp') {
+        $this->error('2FA with authenticator app must be enabled first');
+    }
+    
+    $backupCodes = TwoFactorAuth::generateBackupCodes();
+    
+    // Hash backup codes
+    $hashedBackupCodes = array_map(function($code) {
+        return password_hash($code, PASSWORD_DEFAULT);
+    }, $backupCodes);
+    
+    $db = Database::getInstance();
+    $stmt = $db->prepare("
+        UPDATE users 
+        SET two_factor_backup_codes = ?
+        WHERE id = ?
+    ");
+    $stmt->execute([
+        json_encode($hashedBackupCodes),
+        $_SESSION['user_id']
+    ]);
+    
+    $this->response([
+        'success' => true,
+        'backup_codes' => $backupCodes
+    ]);
+}

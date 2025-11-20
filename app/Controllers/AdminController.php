@@ -103,6 +103,225 @@ class AdminController {
     }
     
     /**
+     * Get active user sessions
+     */
+    public function getActiveSessions() {
+        if (!$this->requireAdmin()) return;
+        
+        try {
+            $config = require __DIR__ . '/../../config/database.php';
+            $pdo = new PDO(
+                'mysql:host=' . $config['host'] . ';dbname=' . $config['database'],
+                $config['username'],
+                $config['password']
+            );
+            $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+            
+            // Clean up old sessions first
+            $pdo->exec("DELETE FROM active_sessions WHERE last_activity < DATE_SUB(NOW(), INTERVAL 30 MINUTE)");
+            
+            // Get active sessions
+            $stmt = $pdo->query("
+                SELECT session_id, user_id, username, ip_address, user_agent,
+                       DATE_FORMAT(started_at, '%Y-%m-%d %H:%i:%s') as started_at,
+                       DATE_FORMAT(last_activity, '%Y-%m-%d %H:%i:%s') as last_activity
+                FROM active_sessions
+                ORDER BY last_activity DESC
+            ");
+            $sessions = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            
+            $this->jsonResponse([
+                'success' => true,
+                'data' => $sessions
+            ]);
+        } catch (Exception $e) {
+            error_log("Error getting active sessions: " . $e->getMessage());
+            $this->jsonResponse(['success' => false, 'error' => 'Failed to get active sessions']);
+        }
+    }
+    
+    /**
+     * Get failed login attempts
+     */
+    public function getFailedLogins() {
+        if (!$this->requireAdmin()) return;
+        
+        try {
+            $config = require __DIR__ . '/../../config/database.php';
+            $pdo = new PDO(
+                'mysql:host=' . $config['host'] . ';dbname=' . $config['database'],
+                $config['username'],
+                $config['password']
+            );
+            $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+            
+            // Get failed logins from last 24 hours
+            $stmt = $pdo->query("
+                SELECT username, ip_address, user_agent,
+                       DATE_FORMAT(attempted_at, '%Y-%m-%d %H:%i:%s') as attempted_at
+                FROM failed_logins
+                WHERE attempted_at > DATE_SUB(NOW(), INTERVAL 24 HOUR)
+                ORDER BY attempted_at DESC
+                LIMIT 100
+            ");
+            $failedLogins = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            
+            $this->jsonResponse([
+                'success' => true,
+                'data' => $failedLogins
+            ]);
+        } catch (Exception $e) {
+            error_log("Error getting failed logins: " . $e->getMessage());
+            $this->jsonResponse(['success' => false, 'error' => 'Failed to get failed logins']);
+        }
+    }
+    
+    /**
+     * Get IP blacklist
+     */
+    public function getIpBlacklist() {
+        if (!$this->requireAdmin()) return;
+        
+        try {
+            $config = require __DIR__ . '/../../config/database.php';
+            $pdo = new PDO(
+                'mysql:host=' . $config['host'] . ';dbname=' . $config['database'],
+                $config['username'],
+                $config['password']
+            );
+            $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+            
+            $stmt = $pdo->query("
+                SELECT id, ip_address, reason, added_by,
+                       DATE_FORMAT(added_at, '%Y-%m-%d %H:%i:%s') as added_at
+                FROM ip_access_control
+                WHERE type = 'blacklist'
+                ORDER BY added_at DESC
+            ");
+            $blacklist = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            
+            $this->jsonResponse([
+                'success' => true,
+                'data' => $blacklist
+            ]);
+        } catch (Exception $e) {
+            error_log("Error getting IP blacklist: " . $e->getMessage());
+            $this->jsonResponse(['success' => false, 'error' => 'Failed to get IP blacklist']);
+        }
+    }
+    
+    /**
+     * Get IP whitelist
+     */
+    public function getIpWhitelist() {
+        if (!$this->requireAdmin()) return;
+        
+        try {
+            $config = require __DIR__ . '/../../config/database.php';
+            $pdo = new PDO(
+                'mysql:host=' . $config['host'] . ';dbname=' . $config['database'],
+                $config['username'],
+                $config['password']
+            );
+            $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+            
+            $stmt = $pdo->query("
+                SELECT id, ip_address, reason, added_by,
+                       DATE_FORMAT(added_at, '%Y-%m-%d %H:%i:%s') as added_at
+                FROM ip_access_control
+                WHERE type = 'whitelist'
+                ORDER BY added_at DESC
+            ");
+            $whitelist = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            
+            $this->jsonResponse([
+                'success' => true,
+                'data' => $whitelist
+            ]);
+        } catch (Exception $e) {
+            error_log("Error getting IP whitelist: " . $e->getMessage());
+            $this->jsonResponse(['success' => false, 'error' => 'Failed to get IP whitelist']);
+        }
+    }
+    
+    /**
+     * Add IP to blacklist or whitelist
+     */
+    public function addIpToList() {
+        if (!$this->requireAdmin()) return;
+        
+        $data = json_decode(file_get_contents('php://input'), true);
+        $ipAddress = trim($data['ip_address'] ?? '');
+        $type = $data['type'] ?? '';
+        $reason = trim($data['reason'] ?? '');
+        
+        if (!$ipAddress || !in_array($type, ['blacklist', 'whitelist'])) {
+            $this->jsonResponse(['success' => false, 'error' => 'Invalid IP address or type']);
+            return;
+        }
+        
+        try {
+            $config = require __DIR__ . '/../../config/database.php';
+            $pdo = new PDO(
+                'mysql:host=' . $config['host'] . ';dbname=' . $config['database'],
+                $config['username'],
+                $config['password']
+            );
+            $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+            
+            $stmt = $pdo->prepare("
+                INSERT INTO ip_access_control (ip_address, type, reason, added_by, added_at)
+                VALUES (?, ?, ?, ?, NOW())
+            ");
+            $stmt->execute([$ipAddress, $type, $reason, $_SESSION['username']]);
+            
+            $this->jsonResponse([
+                'success' => true,
+                'message' => "IP $ipAddress added to $type"
+            ]);
+        } catch (Exception $e) {
+            error_log("Error adding IP to list: " . $e->getMessage());
+            $this->jsonResponse(['success' => false, 'error' => 'Failed to add IP address']);
+        }
+    }
+    
+    /**
+     * Remove IP from blacklist or whitelist
+     */
+    public function removeIpFromList() {
+        if (!$this->requireAdmin()) return;
+        
+        $data = json_decode(file_get_contents('php://input'), true);
+        $id = intval($data['id'] ?? 0);
+        
+        if (!$id) {
+            $this->jsonResponse(['success' => false, 'error' => 'Invalid ID']);
+            return;
+        }
+        
+        try {
+            $config = require __DIR__ . '/../../config/database.php';
+            $pdo = new PDO(
+                'mysql:host=' . $config['host'] . ';dbname=' . $config['database'],
+                $config['username'],
+                $config['password']
+            );
+            $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+            
+            $stmt = $pdo->prepare("DELETE FROM ip_access_control WHERE id = ?");
+            $stmt->execute([$id]);
+            
+            $this->jsonResponse([
+                'success' => true,
+                'message' => 'IP address removed'
+            ]);
+        } catch (Exception $e) {
+            error_log("Error removing IP from list: " . $e->getMessage());
+            $this->jsonResponse(['success' => false, 'error' => 'Failed to remove IP address']);
+        }
+    }
+    
+    /**
      * Delete a user (admin action)
      */
     public function deleteUser() {
@@ -285,5 +504,79 @@ class AdminController {
         header('Content-Type: application/json');
         echo json_encode($data);
         exit;
+    }
+    
+    /**
+     * Get security audit log
+     */
+    public function getSecurityAudit() {
+        if (!$this->requireAdmin()) return;
+        
+        $filter = $_GET['filter'] ?? 'all';
+        
+        try {
+            $config = require __DIR__ . '/../../config/database.php';
+            $pdo = new PDO(
+                'mysql:host=' . $config['host'] . ';dbname=' . $config['database'],
+                $config['username'],
+                $config['password']
+            );
+            $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+            
+            $sql = "SELECT * FROM security_audit_log";
+            
+            if ($filter !== 'all') {
+                $sql .= " WHERE event_type = ?";
+                $stmt = $pdo->prepare($sql . " ORDER BY timestamp DESC LIMIT 100");
+                $stmt->execute([$filter]);
+            } else {
+                $stmt = $pdo->prepare($sql . " ORDER BY timestamp DESC LIMIT 100");
+                $stmt->execute();
+            }
+            
+            $logs = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            
+            $this->jsonResponse([
+                'success' => true,
+                'data' => $logs
+            ]);
+        } catch (PDOException $e) {
+            $this->jsonResponse([
+                'success' => false,
+                'error' => 'Failed to fetch audit log: ' . $e->getMessage()
+            ]);
+        }
+    }
+    
+    /**
+     * Log security event
+     */
+    public static function logSecurityEvent($eventType, $description, $userId = null, $username = null) {
+        try {
+            $config = require __DIR__ . '/../../config/database.php';
+            $pdo = new PDO(
+                'mysql:host=' . $config['host'] . ';dbname=' . $config['database'],
+                $config['username'],
+                $config['password']
+            );
+            $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+            
+            $stmt = $pdo->prepare("
+                INSERT INTO security_audit_log 
+                (user_id, username, event_type, event_description, ip_address, user_agent)
+                VALUES (?, ?, ?, ?, ?, ?)
+            ");
+            
+            $stmt->execute([
+                $userId,
+                $username,
+                $eventType,
+                $description,
+                $_SERVER['REMOTE_ADDR'] ?? 'Unknown',
+                $_SERVER['HTTP_USER_AGENT'] ?? 'Unknown'
+            ]);
+        } catch (PDOException $e) {
+            error_log("Failed to log security event: " . $e->getMessage());
+        }
     }
 }

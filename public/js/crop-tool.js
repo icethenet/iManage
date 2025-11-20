@@ -80,14 +80,6 @@ class CanvasCropTool {
         
         // Initial draw
         this.draw();
-        
-        console.log('Crop tool initialized:', {
-            naturalWidth,
-            naturalHeight,
-            displayedWidth: imgWidth,
-            displayedHeight: imgHeight,
-            selection: this.selection
-        });
     }
     
     setupListeners() {

@@ -44,6 +44,11 @@ async function loadSettings() {
             document.getElementById('statStorage').textContent = `${(stats.storage_used / 1024 / 1024).toFixed(2)} MB`;
             document.getElementById('statShared').textContent = stats.shared_images || 0;
         }
+        
+        // Load 2FA status
+        if (typeof load2FAStatus === 'function') {
+            load2FAStatus();
+        }
     } catch (error) {
         console.error('Error loading settings:', error);
     } finally {
