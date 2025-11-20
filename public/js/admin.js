@@ -646,15 +646,21 @@ async function checkAdminAccess() {
         const data = await response.json();
         
         if (data.success && data.data.is_admin === true) {
-            // Show admin link in navigation
-            const adminLinks = document.querySelectorAll('.admin-only');
-            adminLinks.forEach(link => {
-                link.style.display = 'inline-block';
+            // Hide ALL navigation links for admin users (they stay on admin page)
+            const navLinks = document.querySelectorAll('.nav-link');
+            navLinks.forEach(link => {
+                link.style.display = 'none';
             });
             
             // Hide user-only links (like Settings) for admins
             const userLinks = document.querySelectorAll('.user-only');
             userLinks.forEach(link => {
+                link.style.display = 'none';
+            });
+            
+            // Also hide admin link itself since we're always on admin page
+            const adminLinks = document.querySelectorAll('.admin-only');
+            adminLinks.forEach(link => {
                 link.style.display = 'none';
             });
         } else {
@@ -668,6 +674,15 @@ async function checkAdminAccess() {
             const userLinks = document.querySelectorAll('.user-only');
             userLinks.forEach(link => {
                 link.style.display = 'inline-block';
+            });
+            
+            // Show gallery, upload, folders links for regular users
+            const navLinks = document.querySelectorAll('.nav-link');
+            navLinks.forEach(link => {
+                const view = link.getAttribute('data-view');
+                if (view === 'gallery' || view === 'upload' || view === 'folders') {
+                    link.style.display = 'inline-block';
+                }
             });
         }
     } catch (error) {

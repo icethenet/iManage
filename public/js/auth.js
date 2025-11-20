@@ -26,6 +26,38 @@ async function checkLoginStatus() {
 
         if (data.success && data.logged_in) {
             updateUIAfterLogin(data.user);
+            
+            // Check if user is admin and redirect to admin page
+            const adminResponse = await fetch('api.php?action=is_admin');
+            const adminData = await adminResponse.json();
+            
+            if (adminData.success && adminData.data.is_admin === true) {
+                // Admin user - hide left navigation links but keep logout visible
+                const navLeft = document.querySelector('.nav-left.user-is-logged-in');
+                if (navLeft) {
+                    navLeft.style.display = 'none';
+                }
+                
+                // Ensure logout link is visible
+                const logoutLink = document.getElementById('logout-link');
+                if (logoutLink) {
+                    logoutLink.style.display = 'inline-block';
+                }
+                
+                switchView('admin');
+                if (typeof loadAdmin === 'function') {
+                    loadAdmin();
+                }
+            } else {
+                // Regular user - show normal navigation
+                const navLinks = document.querySelectorAll('.nav-link');
+                navLinks.forEach(link => {
+                    const view = link.getAttribute('data-view');
+                    if (view !== 'admin') {
+                        link.style.display = 'inline-block';
+                    }
+                });
+            }
         } else {
             updateUIAfterLogout();
         }
@@ -59,15 +91,51 @@ async function handleLogin(e) {
             statusDiv.className = 'auth-status success';
             statusDiv.textContent = 'Login successful! Redirecting...';
             updateUIAfterLogin(result.user);
-            // Check admin access
-            if (typeof checkAdminAccess === 'function') {
-                checkAdminAccess();
-            }
-            // Redirect to gallery after a short delay
-            setTimeout(() => {
-                switchView('gallery');
-                loadFolders(); // Reload folders for the logged-in user
-                loadImages(); // Reload images for the logged-in user
+            
+            // Check if user is admin and redirect accordingly
+            setTimeout(async () => {
+                try {
+                    const adminResponse = await fetch('api.php?action=is_admin');
+                    const adminData = await adminResponse.json();
+                    
+                    if (adminData.success && adminData.data.is_admin === true) {
+                        // Admin user - hide left navigation links but keep logout visible
+                        const navLeft = document.querySelector('.nav-left.user-is-logged-in');
+                        if (navLeft) {
+                            navLeft.style.display = 'none';
+                        }
+                        
+                        // Ensure logout link is visible
+                        const logoutLink = document.getElementById('logout-link');
+                        if (logoutLink) {
+                            logoutLink.style.display = 'inline-block';
+                        }
+                        
+                        switchView('admin');
+                        if (typeof loadAdmin === 'function') {
+                            loadAdmin();
+                        }
+                    } else {
+                        // Regular user - show normal navigation and go to gallery
+                        const navLinks = document.querySelectorAll('.nav-link');
+                        navLinks.forEach(link => {
+                            const view = link.getAttribute('data-view');
+                            if (view !== 'admin') {
+                                link.style.display = 'inline-block';
+                            }
+                        });
+                        
+                        switchView('gallery');
+                        loadFolders();
+                        loadImages();
+                    }
+                } catch (error) {
+                    console.error('Error checking admin status:', error);
+                    // Fallback to gallery if check fails
+                    switchView('gallery');
+                    loadFolders();
+                    loadImages();
+                }
             }, 1000);
         } else {
             statusDiv.className = 'auth-status error';
