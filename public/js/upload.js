@@ -13,25 +13,27 @@ function initUpload() {
 
     if (!dropZone || !fileInput || !uploadForm) return;
 
-    // Click to select files
-    dropZone.addEventListener('click', (e) => {
-        // Don't trigger if clicking remove button or if click is on file input itself
-        if (e.target.closest('.remove-file') || e.target === fileInput) return;
+    // Click to select files - use mousedown instead of click for better reliability
+    dropZone.addEventListener('mousedown', (e) => {
+        // Don't trigger if clicking remove button
+        if (e.target.closest('.remove-file') || e.target.closest('.file-preview')) {
+            return;
+        }
         e.preventDefault();
-        e.stopPropagation();
-        fileInput.click();
+        
+        // Delay to ensure event is processed
+        setTimeout(() => {
+            fileInput.click();
+        }, 0);
     });
 
     // File input change
     fileInput.addEventListener('change', (e) => {
-        handleFiles(e.target.files);
+        if (e.target.files && e.target.files.length > 0) {
+            handleFiles(e.target.files);
+        }
         // Reset input to allow selecting same files again
         e.target.value = '';
-    });
-
-    // Prevent default behavior on file input click
-    fileInput.addEventListener('click', (e) => {
-        e.stopPropagation();
     });
 
     // Drag and drop events
