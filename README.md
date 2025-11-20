@@ -15,6 +15,7 @@ A powerful, mobile-first image management system with advanced editing capabilit
 - 🖼️ **Image Gallery** - Beautiful, responsive grid layout with hover previews
 - 📱 **Mobile-First Design** - Optimized for all devices (320px to desktop)
 - 🔐 **User Authentication** - Secure login with session management
+- 🔑 **OAuth 2.0 Social Login** - Sign in with Google, Facebook, GitHub, or Microsoft
 
 ### Image Editing Tools
 - ✂️ **Crop Tool** - Interactive canvas-based cropping with real-time preview
@@ -29,6 +30,7 @@ A powerful, mobile-first image management system with advanced editing capabilit
 - 🌐 **Cross-Platform** - Works identically on Windows, Linux, and macOS
 - ⚡ **RESTful API** - JSON-based API for all operations
 - 📦 **Auto Thumbnails** - Automatic thumbnail generation for fast loading
+- 🎭 **OAuth Integration** - Support for Google, Facebook, GitHub, Microsoft login
 
 ## 🚀 Quick Start
 
@@ -82,6 +84,26 @@ chmod 755 logs
 - **Password:** `admin123`
 - ⚠️ **Change immediately after first login!**
 
+### OAuth Social Login (Optional)
+
+To enable social login with Google, Facebook, GitHub, or Microsoft:
+
+1. **Copy OAuth configuration:**
+   ```bash
+   cp config/oauth.php.example config/oauth.php
+   ```
+
+2. **Run database migration:**
+   ```bash
+   mysql -u root -p imanage < database/migrations/add_oauth_support.sql
+   ```
+
+3. **Register your app with providers and add credentials to `config/oauth.php`**
+
+4. **Enable providers by setting `'enabled' => true`**
+
+See **[OAuth Setup Guide](docs/OAUTH_SETUP.md)** for detailed instructions.
+
 ## 📖 Documentation
 
 ### Main Guides
@@ -93,6 +115,7 @@ chmod 755 logs
 - **[Share Link Feature](docs/SHARE_LINK_FEATURE.md)** - Secure sharing system
 - **[Crop Tool Guide](CROP_TOOL_QUICKSTART.md)** - Interactive cropping tutorial
 - **[Security Overview](docs/SECURITY_HARDENING_SUMMARY.md)** - Security features
+- **[OAuth Setup Guide](docs/OAUTH_SETUP.md)** - Social login configuration
 
 ### Release Notes
 - **[Mobile-First CSS](MOBILEFIRST.txt)** - Responsive design implementation
@@ -104,18 +127,22 @@ chmod 755 logs
 ```
 iManage/
 ├── app/
-│   ├── Controllers/     # Request handlers (User, Image, Folder)
+│   ├── Controllers/     # Request handlers (User, Image, Folder, OAuth)
 │   ├── Models/          # Database models
-│   └── Utils/           # Image manipulation, upload handling
+│   └── Utils/           # Image manipulation, upload handling, OAuth
 ├── config/
 │   ├── app.php          # Application settings
-│   └── database.php     # Database credentials (not in repo)
+│   ├── database.php     # Database credentials (not in repo)
+│   └── oauth.php        # OAuth provider configuration (not in repo)
 ├── database/
-│   └── schema.sql       # Database schema
+│   ├── schema.sql       # Database schema
+│   └── migrations/      # Database migrations (OAuth, etc.)
 ├── public/              # Web root (point your server here)
 │   ├── index.php        # Main application
 │   ├── api.php          # API endpoint
 │   ├── share.php        # Public share viewer
+│   ├── oauth-login.php  # OAuth initiation
+│   ├── oauth-callback.php # OAuth callback handler
 │   ├── css/             # Stylesheets
 │   ├── js/              # JavaScript
 │   └── uploads/         # User uploads (not in repo)
@@ -140,6 +167,7 @@ The entire UI is built with mobile-first principles:
 - ✅ **Session Security** - 30-minute timeout, httponly cookies
 - ✅ **Password Hashing** - bcrypt with cost factor 12
 - ✅ **Share Token Security** - Cryptographically secure random tokens
+- ✅ **OAuth CSRF Protection** - State parameter validation for OAuth flow
 
 ## 🖼️ Image Operations
 
@@ -171,8 +199,11 @@ Code uses `DIRECTORY_SEPARATOR` throughout - no platform-specific paths.
 
 ### Authentication
 ```bash
-POST /api.php?action=login
-POST /api.php?action=logout
+POST /api.php?action=login               # Username/password login
+POST /api.php?action=logout              # Logout
+GET  /api.php?action=check_status        # Check login status
+GET  /oauth-login.php?provider={name}    # OAuth social login
+GET  /oauth-callback.php                 # OAuth callback (automatic)
 ```
 
 ### Images
@@ -225,6 +256,7 @@ This project is licensed under the MIT License - see LICENSE file for details.
 - Uses HTML5 Canvas API for image manipulation
 - GD Library for server-side image processing
 - Mobile-first CSS with progressive enhancement
+- OAuth 2.0 integration with Google, Facebook, GitHub, Microsoft
 
 ## 📧 Support
 
@@ -235,6 +267,7 @@ For issues, questions, or suggestions:
 
 ## 🗺️ Roadmap
 
+- [x] OAuth 2.0 social login (Google, Facebook, GitHub, Microsoft)
 - [ ] Batch image operations
 - [ ] Image metadata (EXIF) display
 - [ ] Advanced filters (blur, sepia, vignette)
@@ -242,6 +275,7 @@ For issues, questions, or suggestions:
 - [ ] Progressive Web App (PWA)
 - [ ] Video thumbnail support
 - [ ] Multi-language support
+- [ ] Two-factor authentication (2FA)
 
 ---
 
