@@ -93,11 +93,45 @@ function updateFilePreview() {
         const item = document.createElement('div');
         item.className = 'file-preview-item';
 
-        // Create image preview
+        // Create image preview (thumbnail)
         const img = document.createElement('img');
+        img.style.opacity = '0';
         const reader = new FileReader();
         reader.onload = (e) => {
-            img.src = e.target.result;
+            const tempImg = new Image();
+            tempImg.onload = function() {
+                // Create canvas for thumbnail
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                
+                // Calculate thumbnail dimensions (max 200x200)
+                const maxSize = 200;
+                let width = tempImg.width;
+                let height = tempImg.height;
+                
+                if (width > height) {
+                    if (width > maxSize) {
+                        height = (height * maxSize) / width;
+                        width = maxSize;
+                    }
+                } else {
+                    if (height > maxSize) {
+                        width = (width * maxSize) / height;
+                        height = maxSize;
+                    }
+                }
+                
+                canvas.width = width;
+                canvas.height = height;
+                
+                // Draw resized image
+                ctx.drawImage(tempImg, 0, 0, width, height);
+                
+                // Set thumbnail as src
+                img.src = canvas.toDataURL('image/jpeg', 0.7);
+                img.style.opacity = '1';
+            };
+            tempImg.src = e.target.result;
         };
         reader.readAsDataURL(file);
 
