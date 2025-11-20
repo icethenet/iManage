@@ -261,4 +261,35 @@ class Image {
         $stmt->execute([$imageId]);
         return $stmt->fetchAll();
     }
+
+    /**
+     * Count images by user
+     */
+    public function countByUser($userId) {
+        $stmt = $this->db->prepare("SELECT COUNT(*) as count FROM {$this->table} WHERE user_id = ?");
+        $stmt->execute([$userId]);
+        $result = $stmt->fetch(PDO::FETCH_ASSOC);
+        return (int)$result['count'];
+    }
+
+    /**
+     * Count shared images by user
+     */
+    public function countSharedByUser($userId) {
+        $stmt = $this->db->prepare("SELECT COUNT(*) as count FROM {$this->table} WHERE user_id = ? AND shared = 1");
+        $stmt->execute([$userId]);
+        $result = $stmt->fetch(PDO::FETCH_ASSOC);
+        return (int)$result['count'];
+    }
+
+    /**
+     * Get total storage used by user (in bytes)
+     */
+    public function getTotalSizeByUser($userId) {
+        $stmt = $this->db->prepare("SELECT SUM(file_size) as total FROM {$this->table} WHERE user_id = ?");
+        $stmt->execute([$userId]);
+        $result = $stmt->fetch(PDO::FETCH_ASSOC);
+        return (int)($result['total'] ?? 0);
+    }
 }
+

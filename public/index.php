@@ -21,6 +21,7 @@
                 <a href="#" class="nav-link active" data-view="gallery">Gallery</a>
                 <a href="#" class="nav-link" data-view="upload">Upload</a>
                 <a href="#" class="nav-link" data-view="folders">Folders</a>
+                <a href="#" class="nav-link" data-view="settings">Settings</a>
             </div>
             <div class="nav-left user-is-logged-out">
                 <a href="#" class="nav-link active" data-view="gallery">Gallery</a>
@@ -91,7 +92,7 @@
                             </select>
                         </div>
 
-                        <div class="form-group">
+                        <!-- <div class="form-group">
                             <label for="bulkTitle">Title (optional - applied to all images):</label>
                             <input type="text" id="bulkTitle" name="title" placeholder="Common title for all images">
                         </div>
@@ -104,7 +105,7 @@
                         <div class="form-group">
                             <label for="bulkTags">Tags (optional - applied to all images):</label>
                             <input type="text" id="bulkTags" name="tags" placeholder="Separate tags with commas">
-                        </div>
+                        </div> -->
 
                         <div id="uploadProgress" class="upload-progress"></div>
 
@@ -198,6 +199,104 @@
                     </form>
                 </div>
             </section>
+
+            <!-- Settings View -->
+            <section id="settings-view" class="view">
+                <div class="settings-container">
+                    <h2>Account Settings</h2>
+                    
+                    <!-- Profile Information -->
+                    <div class="settings-section">
+                        <h3>Profile Information</h3>
+                        <div class="settings-info">
+                            <div class="info-row">
+                                <span class="label">Username:</span>
+                                <span id="settingsUsername" class="value"></span>
+                            </div>
+                            <div class="info-row">
+                                <span class="label">Email:</span>
+                                <span id="settingsEmail" class="value"></span>
+                            </div>
+                            <div class="info-row">
+                                <span class="label">Member Since:</span>
+                                <span id="settingsMemberSince" class="value"></span>
+                            </div>
+                            <div class="info-row">
+                                <span class="label">Last Login:</span>
+                                <span id="settingsLastLogin" class="value"></span>
+                            </div>
+                            <div class="info-row">
+                                <span class="label">OAuth Provider:</span>
+                                <span id="settingsOAuthProvider" class="value"></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Update Email -->
+                    <div class="settings-section">
+                        <h3>Update Email</h3>
+                        <form id="updateEmailForm" class="settings-form">
+                            <div class="form-group">
+                                <label for="newEmail">New Email Address:</label>
+                                <input type="email" id="newEmail" name="email" placeholder="your.email@example.com">
+                            </div>
+                            <button type="submit" class="btn btn-primary">Update Email</button>
+                            <div id="emailStatus" class="form-status"></div>
+                        </form>
+                    </div>
+
+                    <!-- Change Password -->
+                    <div class="settings-section">
+                        <h3>Change Password</h3>
+                        <form id="changePasswordForm" class="settings-form">
+                            <div class="form-group">
+                                <label for="currentPassword">Current Password:</label>
+                                <input type="password" id="currentPassword" name="current_password" minlength="8" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="newPassword">New Password:</label>
+                                <input type="password" id="newPassword" name="new_password" minlength="8" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="confirmNewPassword">Confirm New Password:</label>
+                                <input type="password" id="confirmNewPassword" name="confirm_password" minlength="8" required>
+                            </div>
+                            <button type="submit" class="btn btn-primary">Change Password</button>
+                            <div id="passwordStatus" class="form-status"></div>
+                        </form>
+                    </div>
+
+                    <!-- Account Statistics -->
+                    <div class="settings-section">
+                        <h3>Account Statistics</h3>
+                        <div class="stats-grid">
+                            <div class="stat-card">
+                                <div class="stat-value" id="totalImages">0</div>
+                                <div class="stat-label">Total Images</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-value" id="totalFolders">0</div>
+                                <div class="stat-label">Folders</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-value" id="storageUsed">0 MB</div>
+                                <div class="stat-label">Storage Used</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-value" id="sharedImages">0</div>
+                                <div class="stat-label">Shared Images</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Danger Zone -->
+                    <div class="settings-section danger-zone">
+                        <h3>Danger Zone</h3>
+                        <p>Deleting your account is permanent and cannot be undone.</p>
+                        <button id="deleteAccountBtn" class="btn btn-danger">Delete Account</button>
+                    </div>
+                </div>
+            </section>
         </main>
     </div>
 
@@ -214,8 +313,32 @@
                     <div class="spinner-inner"></div>
                 </div>
                 <div class="modal-details">
-                    <h2 id="modalTitle"></h2>
-                    <p id="modalDescription"></p>
+                    <div class="modal-metadata-section">
+                        <button id="editMetadataBtn" class="btn btn-sm edit-metadata-btn">Edit Info</button>
+                        <div id="metadataViewMode">
+                            <h2 id="modalTitle"></h2>
+                            <p id="modalDescription"></p>
+                            <p id="modalTags" style="color: #888; font-size: 14px;"></p>
+                        </div>
+                        <div id="metadataEditMode" style="display: none;">
+                            <div class="form-group">
+                                <label for="editTitle">Title:</label>
+                                <input type="text" id="editTitle" class="form-control">
+                            </div>
+                            <div class="form-group">
+                                <label for="editDescription">Description:</label>
+                                <textarea id="editDescription" class="form-control" rows="3"></textarea>
+                            </div>
+                            <div class="form-group">
+                                <label for="editTags">Tags:</label>
+                                <input type="text" id="editTags" class="form-control" placeholder="Comma-separated tags">
+                            </div>
+                            <div class="edit-actions">
+                                <button id="saveMetadataBtn" class="btn btn-sm">Save</button>
+                                <button id="cancelMetadataBtn" class="btn btn-sm">Cancel</button>
+                            </div>
+                        </div>
+                    </div>
                     
                     <div class="modal-info">
                         <div class="info-item">
@@ -464,5 +587,6 @@
             });
         }
     </script>
+    <script src="js/settings.js"></script>
 </body>
 </html>

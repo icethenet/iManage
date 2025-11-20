@@ -158,6 +158,31 @@ try {
             $controller->getOAuthError();
             break;
 
+        case 'get_profile':
+            $controller = new UserController();
+            $controller->getProfile();
+            break;
+
+        case 'update_email':
+            $controller = new UserController();
+            $controller->updateEmail();
+            break;
+
+        case 'change_password':
+            $controller = new UserController();
+            $controller->changePassword();
+            break;
+
+        case 'get_account_stats':
+            $controller = new UserController();
+            $controller->getAccountStats();
+            break;
+
+        case 'delete_account':
+            $controller = new UserController();
+            $controller->deleteAccount();
+            break;
+
         // Folder endpoints
         case 'list_folders':
             $controller = new FolderController();

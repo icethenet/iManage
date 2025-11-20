@@ -77,4 +77,15 @@ class Folder {
         $stmt->execute([$name, $userId]);
         return true;
     }
+
+    /**
+     * Count folders by user
+     */
+    public function countByUser($userId) {
+        $stmt = $this->db->prepare("SELECT COUNT(*) as count FROM {$this->table} WHERE user_id = ?");
+        $stmt->execute([$userId]);
+        $result = $stmt->fetch(PDO::FETCH_ASSOC);
+        return (int)$result['count'];
+    }
 }
+

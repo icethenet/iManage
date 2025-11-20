@@ -106,6 +106,11 @@ function setupEventListeners() {
         const modal = document.getElementById('imageModal');
         if (e.target === modal) closeModal();
     });
+    
+    // Metadata editing
+    document.getElementById('editMetadataBtn')?.addEventListener('click', enterMetadataEditMode);
+    document.getElementById('saveMetadataBtn')?.addEventListener('click', saveMetadata);
+    document.getElementById('cancelMetadataBtn')?.addEventListener('click', exitMetadataEditMode);
 }
 
 // Attach listener for the share checkbox
@@ -146,6 +151,17 @@ function switchView(view) {
         link.classList.remove('active');
         if (link.dataset.view === view) link.classList.add('active');
     });
+
+    // Load data for specific views
+    if (view === 'gallery') {
+        loadImages();
+    } else if (view === 'folders') {
+        loadFolders();
+    } else if (view === 'settings') {
+        if (typeof loadSettings === 'function') {
+            loadSettings();
+        }
+    }
 }
 
 function showLoading(show = true) {
@@ -264,6 +280,7 @@ async function openImageModal(imageId) {
             document.getElementById('modalImage').src = image.original_url;
             document.getElementById('modalTitle').textContent = image.title || image.original_name;
             document.getElementById('modalDescription').textContent = image.description || 'No description';
+            document.getElementById('modalTags').textContent = image.tags ? `Tags: ${image.tags}` : '';
             document.getElementById('modalDimensions').textContent = `${image.width}x${image.height}px`;
             document.getElementById('modalFileSize').textContent = `${(image.file_size / 1024 / 1024).toFixed(2)}MB`;
             document.getElementById('modalCreated').textContent = new Date(image.created_at).toLocaleDateString();
@@ -303,6 +320,78 @@ async function openImageModal(imageId) {
 function closeModal() {
     document.getElementById('imageModal').classList.remove('active');
     currentImageId = null;
+    // Reset to view mode when closing
+    exitMetadataEditMode();
+}
+
+function exitMetadataEditMode() {
+    document.getElementById('metadataViewMode').style.display = 'block';
+    document.getElementById('metadataEditMode').style.display = 'none';
+    document.getElementById('editMetadataBtn').style.display = 'inline-block';
+}
+
+function enterMetadataEditMode() {
+    // Get current values
+    const title = document.getElementById('modalTitle').textContent;
+    const description = document.getElementById('modalDescription').textContent;
+    const tagsText = document.getElementById('modalTags').textContent;
+    const tags = tagsText.replace('Tags: ', '');
+    
+    // Populate edit fields
+    document.getElementById('editTitle').value = title;
+    document.getElementById('editDescription').value = description === 'No description' ? '' : description;
+    document.getElementById('editTags').value = tags;
+    
+    // Toggle visibility
+    document.getElementById('metadataViewMode').style.display = 'none';
+    document.getElementById('metadataEditMode').style.display = 'block';
+    document.getElementById('editMetadataBtn').style.display = 'none';
+}
+
+async function saveMetadata() {
+    if (!currentImageId) return;
+    
+    const title = document.getElementById('editTitle').value.trim();
+    const description = document.getElementById('editDescription').value.trim();
+    const tags = document.getElementById('editTags').value.trim();
+    
+    showLoading(true);
+    
+    try {
+        const response = await fetch(`${API_BASE}?action=update&id=${currentImageId}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                title: title,
+                description: description,
+                tags: tags
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            // Update display
+            document.getElementById('modalTitle').textContent = title || 'Untitled';
+            document.getElementById('modalDescription').textContent = description || 'No description';
+            document.getElementById('modalTags').textContent = tags ? `Tags: ${tags}` : '';
+            
+            // Exit edit mode
+            exitMetadataEditMode();
+            
+            // Refresh gallery
+            loadImages();
+        } else {
+            alert('Error updating metadata: ' + (data.error || 'Unknown error'));
+        }
+    } catch (error) {
+        console.error('Error saving metadata:', error);
+        alert('Error saving metadata');
+    } finally {
+        showLoading(false);
+    }
 }
 
 function downloadImage() {

@@ -34,7 +34,7 @@ class User {
      * Find a user by their ID
      */
     public function findById($id) {
-        $stmt = $this->db->prepare("SELECT id, username, created_at FROM users WHERE id = ?");
+        $stmt = $this->db->prepare("SELECT * FROM users WHERE id = ?");
         $stmt->execute([$id]);
         return $stmt->fetch(PDO::FETCH_ASSOC);
     }
@@ -96,6 +96,31 @@ class User {
      */
     public function updateLastLogin($userId) {
         $stmt = $this->db->prepare("UPDATE users SET last_login = NOW() WHERE id = ?");
+        return $stmt->execute([$userId]);
+    }
+
+    /**
+     * Update user's email
+     */
+    public function updateEmail($userId, $email) {
+        $stmt = $this->db->prepare("UPDATE users SET email = ? WHERE id = ?");
+        return $stmt->execute([$email, $userId]);
+    }
+
+    /**
+     * Update user's password
+     */
+    public function updatePassword($userId, $newPassword) {
+        $passwordHash = password_hash($newPassword, PASSWORD_DEFAULT);
+        $stmt = $this->db->prepare("UPDATE users SET password_hash = ? WHERE id = ?");
+        return $stmt->execute([$passwordHash, $userId]);
+    }
+
+    /**
+     * Delete user account
+     */
+    public function delete($userId) {
+        $stmt = $this->db->prepare("DELETE FROM users WHERE id = ?");
         return $stmt->execute([$userId]);
     }
 }
