@@ -207,6 +207,9 @@ async function handleUploadSubmit(e) {
     }
 
     const folder = document.getElementById('imageFolder').value;
+    const bulkTitle = document.getElementById('bulkTitle').value.trim();
+    const bulkDescription = document.getElementById('bulkDescription').value.trim();
+    const bulkTags = document.getElementById('bulkTags').value.trim();
     const progressContainer = document.getElementById('uploadProgress');
     progressContainer.innerHTML = '';
 
@@ -216,7 +219,7 @@ async function handleUploadSubmit(e) {
 
     for (let i = 0; i < selectedFiles.length; i++) {
         const file = selectedFiles[i];
-        const result = await uploadSingleFile(file, folder, i);
+        const result = await uploadSingleFile(file, folder, bulkTitle, bulkDescription, bulkTags, i);
         
         if (result.success) {
             successCount++;
@@ -229,10 +232,13 @@ async function handleUploadSubmit(e) {
     if (errorCount === 0) {
         showUploadStatus(`Successfully uploaded ${successCount} image(s)`, 'success');
         
-        // Clear selection after successful upload
+        // Clear selection and form after successful upload
         selectedFiles = [];
         updateFilePreview();
         updateFileInputDisplay();
+        document.getElementById('bulkTitle').value = '';
+        document.getElementById('bulkDescription').value = '';
+        document.getElementById('bulkTags').value = '';
         
         // Reload gallery
         setTimeout(() => {
@@ -247,7 +253,7 @@ async function handleUploadSubmit(e) {
 /**
  * Upload single file with progress
  */
-async function uploadSingleFile(file, folder, index) {
+async function uploadSingleFile(file, folder, bulkTitle, bulkDescription, bulkTags, index) {
     const progressContainer = document.getElementById('uploadProgress');
     
     // Create progress item
@@ -272,9 +278,16 @@ async function uploadSingleFile(file, folder, index) {
         const formData = new FormData();
         formData.append('image', file);
         formData.append('folder', folder);
-        formData.append('title', file.name.replace(/\.[^/.]+$/, '')); // Filename without extension
-        formData.append('description', '');
-        formData.append('tags', '');
+        
+        // Use bulk title if provided, otherwise use filename
+        const title = bulkTitle || file.name.replace(/\.[^/.]+$/, '');
+        formData.append('title', title);
+        
+        // Use bulk description if provided
+        formData.append('description', bulkDescription || '');
+        
+        // Use bulk tags if provided
+        formData.append('tags', bulkTags || '');
 
         // Upload with progress
         const response = await fetch(`${API_BASE}?action=upload`, {

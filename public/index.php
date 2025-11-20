@@ -91,6 +91,21 @@
                             </select>
                         </div>
 
+                        <div class="form-group">
+                            <label for="bulkTitle">Title (optional - applied to all images):</label>
+                            <input type="text" id="bulkTitle" name="title" placeholder="Common title for all images">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="bulkDescription">Description (optional - applied to all images):</label>
+                            <textarea id="bulkDescription" name="description" placeholder="Common description for all images" rows="3"></textarea>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="bulkTags">Tags (optional - applied to all images):</label>
+                            <input type="text" id="bulkTags" name="tags" placeholder="Separate tags with commas">
+                        </div>
+
                         <div id="uploadProgress" class="upload-progress"></div>
 
                         <button type="submit" class="btn btn-primary">Upload Images</button>
