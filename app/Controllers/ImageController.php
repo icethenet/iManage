@@ -185,8 +185,15 @@ class ImageController {
 
             $logDebug("User authenticated: username='{$username}', user_id='{$userId}'.");
 
+            // Debug: Log what we received
+            if (empty($_FILES)) {
+                $this->error('No files received. $_FILES is empty. Check that the form enctype is multipart/form-data.', 400);
+                return;
+            }
+
             if (!isset($_FILES['image'])) {
-                $this->error('No image file provided', 400);
+                $availableKeys = implode(', ', array_keys($_FILES));
+                $this->error("No 'image' file field found. Available fields: " . ($availableKeys ?: 'none'), 400);
                 return;
             }
 
