@@ -1,0 +1,65 @@
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # Set the base if your project is in a subdirectory.
+    # If your site is at http://localhost/imanage/, this should be /imanage/
+    # If at http://imanage.local/, this can be just /
+    # RewriteBase /
+
+    # 1. Route API calls to api.php
+    RewriteRule ^api/(.*)$ api.php [QSA,L]
+
+    # 2. Do not rewrite existing files or directories
+    RewriteCond %{REQUEST_FILENAME} -f [OR]
+    RewriteCond %{REQUEST_FILENAME} -d
+    RewriteRule ^ - [L]
+
+    # 3. Route all other requests to index.php for the front-end
+    RewriteRule ^ index.php [L]
+</IfModule>
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    
+</IfModule>
+
+# Security headers
+<IfModule mod_headers.c>
+    # Allow cross-origin requests
+    Header set Access-Control-Allow-Origin "*"
+    Header set Access-Control-Allow-Methods "GET, POST, PUT, DELETE, OPTIONS"
+    Header set Access-Control-Allow-Headers "Content-Type, Authorization"
+    
+    # Security headers
+    Header set X-Content-Type-Options "nosniff"
+    Header set X-Frame-Options "SAMEORIGIN"
+    Header set X-XSS-Protection "1; mode=block"
+</IfModule>
+
+# Prevent access to sensitive files
+<FilesMatch "\.env|\.gitignore|config/|database/">
+    Order Allow,Deny
+    Deny from all
+</FilesMatch>
+
+# Enable gzip compression
+<IfModule mod_deflate.c>
+    AddOutputFilterByType DEFLATE text/html text/plain text/xml text/css text/javascript application/javascript application/json
+</IfModule>
+
+# Cache control
+<IfModule mod_expires.c>
+    ExpiresActive On
+    
+    # Images
+    ExpiresByType image/jpeg "access plus 1 year"
+    ExpiresByType image/gif "access plus 1 year"
+    ExpiresByType image/png "access plus 1 year"
+    ExpiresByType image/webp "access plus 1 year"
+    
+    # CSS and JavaScript
+    ExpiresByType text/css "access plus 1 year"
+    ExpiresByType application/javascript "access plus 1 year"
+    
+    # Default
+    ExpiresDefault "access plus 2 days"
+</IfModule>

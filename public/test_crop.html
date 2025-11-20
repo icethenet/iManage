@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Crop Tool Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        #container { max-width: 800px; margin: 20px auto; }
+        button { margin: 10px 5px; padding: 10px 20px; }
+        #cropCanvasContainer { margin: 20px 0; }
+    </style>
+</head>
+<body>
+    <div id="container">
+        <h1>Crop Tool Test</h1>
+        <img id="testImage" src="uploads/John/Asian Girls/original/01_691d3e4db2197.jpg" style="max-width: 100%; display: block;">
+        <button id="startCrop">Start Crop</button>
+        <button id="cancelCrop" style="display:none;">Cancel</button>
+        <button id="applyCrop" style="display:none;">Apply Crop</button>
+        <div id="cropCanvasContainer"></div>
+        <pre id="result"></pre>
+    </div>
+
+    <script src="js/crop-tool.js"></script>
+    <script>
+        let cropTool = null;
+        const img = document.getElementById('testImage');
+        const result = document.getElementById('result');
+
+        document.getElementById('startCrop').addEventListener('click', () => {
+            try {
+                cropTool = new CanvasCropTool(img, 'cropCanvasContainer');
+                cropTool.enter();
+                document.getElementById('startCrop').style.display = 'none';
+                document.getElementById('cancelCrop').style.display = 'inline-block';
+                document.getElementById('applyCrop').style.display = 'inline-block';
+                result.textContent = 'Crop tool started. Draw a selection area.';
+            } catch (error) {
+                result.textContent = 'Error: ' + error.message;
+                console.error(error);
+            }
+        });
+
+        document.getElementById('cancelCrop').addEventListener('click', () => {
+            if (cropTool) {
+                cropTool.exit();
+                cropTool = null;
+            }
+            document.getElementById('startCrop').style.display = 'inline-block';
+            document.getElementById('cancelCrop').style.display = 'none';
+            document.getElementById('applyCrop').style.display = 'none';
+            result.textContent = 'Crop cancelled.';
+        });
+
+        document.getElementById('applyCrop').addEventListener('click', () => {
+            if (cropTool) {
+                const selection = cropTool.getSelection();
+                result.textContent = 'Selection:\n' + JSON.stringify(selection, null, 2);
+                cropTool.exit();
+                cropTool = null;
+            }
+            document.getElementById('startCrop').style.display = 'inline-block';
+            document.getElementById('cancelCrop').style.display = 'none';
+            document.getElementById('applyCrop').style.display = 'none';
+        });
+    </script>
+</body>
+</html>

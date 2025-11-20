@@ -1,0 +1,43 @@
+<IfModule mod_authz_core.c>
+    # Apache 2.4+ authorization syntax
+    <FilesMatch "\.(phps?|phtml)$">
+        Require all denied
+    </FilesMatch>
+
+    <FilesMatch "\.(exe|sh)$">
+        Require all denied
+    </FilesMatch>
+
+    # Allow images to be served
+    <FilesMatch "\.(jpg|jpeg|png|gif|webp|bmp)$">
+        Require all granted
+    </FilesMatch>
+</IfModule>
+
+<IfModule !mod_authz_core.c>
+    # Fallback for older Apache: allow only images
+    <FilesMatch "\.(phps?|phtml)$">
+        Deny from all
+    </FilesMatch>
+
+    <FilesMatch "\.(exe|sh)$">
+        Deny from all
+    </FilesMatch>
+
+    <FilesMatch "\.(jpg|jpeg|png|gif|webp|bmp)$">
+        Allow from all
+    </FilesMatch>
+</IfModule>
+
+# Disable directory listing
+Options -Indexes
+
+# Prevent access to files without an extension
+<FilesMatch "^[^.]+$">
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Deny from all
+    </IfModule>
+</FilesMatch>

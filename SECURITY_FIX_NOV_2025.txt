@@ -1,0 +1,45 @@
+# Security Fix - November 19, 2025
+
+## Critical Vulnerability Fixed
+
+### Problem
+DELETE and MANIPULATE endpoints had **no authentication checks** - any user could delete or modify any image without logging in.
+
+### Solution
+Added authentication and authorization checks:
+
+```php
+// Check 1: User must be logged in
+if (!isset($_SESSION['user_id'])) {
+    $this->error('Authentication required', 401);
+    return;
+}
+
+// Check 2: User must own the image
+if ($image['user_id'] !== $_SESSION['user_id']) {
+    $this->error('Forbidden - you can only [action] your own images', 403);
+    return;
+}
+```
+
+## Fixed Endpoints
+- ✅ DELETE - Now requires login + ownership
+- ✅ MANIPULATE - Now requires login + ownership
+- ✅ UPDATE - Already had security (verified)
+- ✅ REVERT - Already had security (verified)
+
+## Public Endpoints (Intentional)
+- GET SHARED - View shared images (read-only)
+- DOWNLOAD - Download shared images (read-only)
+
+## Test Results
+```
+Test 1: DELETE without auth → ✓ 401 Authentication required
+Test 2: MANIPULATE without auth → ✓ 401 Authentication required  
+Test 3: UPDATE without auth → ✓ 403 Forbidden
+```
+
+Run: `php tools/test_security_simple.php`
+
+## Status
+✅ **SECURE** - All destructive operations now protected

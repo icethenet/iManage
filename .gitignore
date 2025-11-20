@@ -1,0 +1,27 @@
+# Sensitive configuration
+config/database.php
+
+# User uploads (exclude actual uploaded files, keep directory structure)
+public/uploads/*
+!public/uploads/.htaccess
+
+# Logs
+logs/*.log
+logs/*.txt
+
+# IDE and system files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.bak
+*.swp
+*~
+
+# Database dumps
+*.sql.gz
+*.sql.zip
+database/backups/

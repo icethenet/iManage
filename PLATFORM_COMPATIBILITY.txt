@@ -1,0 +1,65 @@
+# Platform Quick Reference
+
+## ✅ YES - Works on Windows, Linux, and macOS
+
+### Quick Setup by Platform
+
+#### Windows (XAMPP/WAMP)
+```powershell
+# 1. Set permissions
+icacls "public\uploads" /grant "NT AUTHORITY\SYSTEM:(OI)(CI)F" /T
+
+# 2. Open web installer
+http://localhost/imanage/public/install.php
+```
+
+#### Linux (Ubuntu/Debian)
+```bash
+# 1. Set permissions  
+sudo chown -R www-data:www-data public/uploads
+sudo chmod -R 775 public/uploads
+
+# 2. Open web installer
+http://localhost/imanage/public/install.php
+```
+
+#### macOS
+```bash
+# 1. Set permissions
+sudo chown -R _www:_www public/uploads
+sudo chmod -R 775 public/uploads
+
+# 2. Open web installer
+http://localhost/imanage/public/install.php
+```
+
+### Key Points
+
+✅ **Code is 100% portable** - no platform-specific code
+✅ **Uses DIRECTORY_SEPARATOR** - automatically handles Windows `\` vs Linux `/`
+✅ **Database schema identical** - MySQL works same everywhere
+✅ **Same commands** - PHP scripts work on all platforms
+✅ **Web installer** - browser-based, works anywhere
+
+### Only Differences: Permissions
+
+**Windows:**
+- Uses NTFS permissions
+- Command: `icacls`
+
+**Linux/macOS:**
+- Uses Unix permissions (owner/group/other)
+- Commands: `chown`, `chmod`
+
+### Full Documentation
+
+See `docs/CROSS_PLATFORM.md` for complete details including:
+- Platform-specific installation steps
+- Nginx configuration (alternative to Apache)
+- Docker support
+- Migration between platforms
+- Troubleshooting by OS
+
+---
+
+**Bottom Line:** Install on any platform with confidence - the code is designed to be cross-platform from the ground up!
