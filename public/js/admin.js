@@ -590,6 +590,11 @@ function importSystemSettings() {
 async function loadActivityLog() {
     const activityLog = document.getElementById('activityLog');
     
+    if (!activityLog) {
+        console.error('Activity log element not found');
+        return;
+    }
+    
     // Mock activity data (TODO: Implement real activity tracking)
     const activities = [
         { time: '2 minutes ago', text: 'User "john" uploaded 3 images', type: 'upload' },
