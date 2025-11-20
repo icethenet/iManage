@@ -112,19 +112,17 @@
                         <button type="submit" class="btn btn-primary">Upload Images</button>
                         <div id="uploadStatus" class="upload-status"></div>
                     </form>
-                        </div>
 
-                        <!-- Hidden section to create a subfolder -->
-                        <div id="createSubfolderSection" class="form-group" style="display: none; background-color: #f0f2ff; padding: 15px; border-radius: 6px;">
-                            <label for="newSubfolderName" style="font-weight: bold;">Create a new subfolder to upload into:</label>
-                            <p style="font-size: 12px; margin-bottom: 10px;">You don't have any subfolders yet. Create one here.</p>
-                            <input type="text" id="newSubfolderName" name="new_subfolder_name" placeholder="New subfolder name">
-                            <input type="hidden" id="newSubfolderDesc" name="new_subfolder_description" value="">
-                            <button type="button" id="createSubfolderBtn" class="btn btn-secondary btn-sm" style="margin-top: 10px;">Create Subfolder</button>
-                            <div id="subfolderStatus" style="margin-top: 10px; font-size: 12px;"></div>
-                        </div>
+                    <!-- Hidden section to create a subfolder -->
+                    <div id="createSubfolderSection" class="form-group" style="display: none; background-color: #f0f2ff; padding: 15px; border-radius: 6px; margin-top: 20px;">
+                        <label for="newSubfolderName" style="font-weight: bold;">Create a new subfolder to upload into:</label>
+                        <p style="font-size: 12px; margin-bottom: 10px;">You don't have any subfolders yet. Create one here.</p>
+                        <input type="text" id="newSubfolderName" name="new_subfolder_name" placeholder="New subfolder name">
+                        <input type="hidden" id="newSubfolderDesc" name="new_subfolder_description" value="">
+                        <button type="button" id="createSubfolderBtn" class="btn btn-secondary btn-sm" style="margin-top: 10px;">Create Subfolder</button>
+                        <div id="subfolderStatus" style="margin-top: 10px; font-size: 12px;"></div>
+                    </div>
                 </div>
-            </section>
             </section>
 
             <!-- Folders View -->
