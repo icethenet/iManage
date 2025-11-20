@@ -940,23 +940,6 @@
                         </div>
                     </div>
 
-                    <!-- User Management -->
-                    <div class="admin-section">
-                        <h3>👥 User Management</h3>
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-                            <div>
-                                <input type="text" id="userSearchInput" placeholder="Search users..." style="padding: 8px 12px; border: 1px solid #ddd; border-radius: 4px; width: 250px;">
-                            </div>
-                            <div>
-                                <button class="btn btn-sm btn-primary" onclick="exportUsers()">📥 Export Users</button>
-                                <button class="btn btn-sm" onclick="loadUsersList()">🔄 Refresh</button>
-                            </div>
-                        </div>
-                        <div id="usersList" class="users-list">
-                            <p style="color: #666;">Loading users...</p>
-                        </div>
-                    </div>
-
                     <!-- System Settings -->
                     <div class="admin-section">
                         <h3>⚙️ System Settings</h3>

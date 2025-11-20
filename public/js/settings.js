@@ -20,9 +20,12 @@ async function loadSettings() {
             document.getElementById('settingsLastLogin').textContent = user.last_login ? new Date(user.last_login).toLocaleDateString() : 'Never';
             document.getElementById('settingsOAuthProvider').textContent = user.oauth_provider ? user.oauth_provider.charAt(0).toUpperCase() + user.oauth_provider.slice(1) : 'None';
             
-            // Update current provider display
-            const providerName = user.oauth_provider ? user.oauth_provider.charAt(0).toUpperCase() + user.oauth_provider.slice(1) : 'None';
-            document.getElementById('currentProvider').textContent = providerName;
+            // Update current provider display if element exists
+            const currentProviderEl = document.getElementById('currentProvider');
+            if (currentProviderEl) {
+                const providerName = user.oauth_provider ? user.oauth_provider.charAt(0).toUpperCase() + user.oauth_provider.slice(1) : 'None';
+                currentProviderEl.textContent = providerName;
+            }
             
             // Pre-fill email field if exists
             if (user.email) {

@@ -257,6 +257,43 @@ try {
             $controller->deleteUser();
             break;
 
+        case 'admin_analytics':
+            // Return mock analytics data (TODO: implement real analytics)
+            header('Content-Type: application/json');
+            echo json_encode([
+                'success' => true,
+                'data' => [
+                    'uploads' => array_fill(0, 7, rand(5, 20)),
+                    'views' => array_fill(0, 7, rand(50, 200)),
+                    'users' => array_fill(0, 7, rand(1, 5)),
+                    'storage' => array_fill(0, 7, rand(100, 500))
+                ]
+            ]);
+            exit;
+
+        case 'admin_system_health':
+            // Return mock system health data (TODO: implement real monitoring)
+            header('Content-Type: application/json');
+            echo json_encode([
+                'success' => true,
+                'data' => [
+                    'cpu' => rand(10, 60),
+                    'memory' => rand(30, 70),
+                    'disk' => rand(40, 80),
+                    'uptime' => '5 days 12 hours'
+                ]
+            ]);
+            exit;
+
+        case 'admin_active_sessions':
+            // Return mock session data (TODO: implement real session tracking)
+            header('Content-Type: application/json');
+            echo json_encode([
+                'success' => true,
+                'data' => []
+            ]);
+            exit;
+
         case 'oauth_status':
             $controller = new AdminController();
             $controller->getOAuthStatus();
