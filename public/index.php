@@ -691,7 +691,40 @@
                     <div class="admin-section">
                         <h3>🔑 OAuth Provider Configuration</h3>
                         <div class="oauth-providers-grid" id="oauthProviders">
-                            <p>Loading OAuth providers...</p>
+                            <!-- Google -->
+                            <div class="oauth-provider-card">
+                                <h4>Google</h4>
+                                <div class="provider-status" id="googleStatus">Checking...</div>
+                                <button class="btn btn-sm" onclick="testOAuthProvider('google')">Test Connection</button>
+                                <button class="btn btn-sm" onclick="viewOAuthConfig('google')">View Config</button>
+                            </div>
+                            
+                            <!-- Facebook -->
+                            <div class="oauth-provider-card">
+                                <h4>Facebook</h4>
+                                <div class="provider-status" id="facebookStatus">Checking...</div>
+                                <button class="btn btn-sm" onclick="testOAuthProvider('facebook')">Test Connection</button>
+                                <button class="btn btn-sm" onclick="viewOAuthConfig('facebook')">View Config</button>
+                            </div>
+                            
+                            <!-- GitHub -->
+                            <div class="oauth-provider-card">
+                                <h4>GitHub</h4>
+                                <div class="provider-status" id="githubStatus">Checking...</div>
+                                <button class="btn btn-sm" onclick="testOAuthProvider('github')">Test Connection</button>
+                                <button class="btn btn-sm" onclick="viewOAuthConfig('github')">View Config</button>
+                            </div>
+                            
+                            <!-- Microsoft -->
+                            <div class="oauth-provider-card">
+                                <h4>Microsoft</h4>
+                                <div class="provider-status" id="microsoftStatus">Checking...</div>
+                                <button class="btn btn-sm" onclick="testOAuthProvider('microsoft')">Test Connection</button>
+                                <button class="btn btn-sm" onclick="viewOAuthConfig('microsoft')">View Config</button>
+                            </div>
+                        </div>
+                        <div style="margin-top: 20px;">
+                            <p><strong>Note:</strong> OAuth configuration is stored in <code>config/oauth.php</code>. Copy <code>config/oauth.php.example</code> to get started.</p>
                         </div>
                     </div>
                     </div><!-- End OAuth Tab -->

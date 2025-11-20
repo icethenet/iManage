@@ -21,7 +21,8 @@ class Image {
         $params = [];
 
         if (!is_null($userId)) {
-            $query .= " AND user_id = ?";
+            // When user is logged in, show their own images OR shared images from others
+            $query .= " AND (user_id = ? OR shared = 1)";
             $params[] = $userId;
         } else {
             // For public view, only show shared images
@@ -117,7 +118,8 @@ class Image {
         $params = [];
 
         if (!is_null($userId)) {
-            $query .= " AND user_id = ?";
+            // When user is logged in, count their own images OR shared images from others
+            $query .= " AND (user_id = ? OR shared = 1)";
             $params[] = $userId;
         } else {
             $query .= " AND shared = 1";

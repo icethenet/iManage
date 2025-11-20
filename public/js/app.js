@@ -185,18 +185,27 @@ function loadImages() {
     if (currentFolder) url += `&folder=${currentFolder}`;
 
     fetch(url)
-        .then(response => response.json())
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+        })
         .then(data => {
             if (data.success) {
                 displayGallery(data.data);
                 updatePagination(data.pagination);
                 totalPages = data.pagination.total_pages;
+            } else {
+                console.error('API returned error:', data.error);
+                document.getElementById('gallery').innerHTML = 
+                    `<div class="gallery-empty"><p>Error: ${data.error || 'Failed to load images'}</p></div>`;
             }
         })
         .catch(error => {
             console.error('Error loading images:', error);
             document.getElementById('gallery').innerHTML = 
-                '<div class="gallery-empty"><p>Error loading images</p></div>';
+                '<div class="gallery-empty"><p>Error loading images. Please try refreshing the page.</p></div>';
         })
         .finally(() => showLoading(false));
 }
@@ -548,20 +557,20 @@ function displayFolderSelect(folders) {
     const select = document.getElementById('imageFolder');
     const createSubfolderSection = document.getElementById('createSubfolderSection');
 
-    // Always start with a clean slate. The backend now provides the correct list.
-    select.innerHTML = '';
+    // Always start with a clean slate and add default option
+    select.innerHTML = '<option value="default">Default</option>';
     
     if (folders.length === 0) {
         // If no subfolders exist, show the create subfolder section
         createSubfolderSection.style.display = 'block';
-        select.style.display = 'none'; // Hide the empty select dropdown
+        select.style.display = 'block'; // Keep select visible with default option
     } else {
         // If folders exist, hide the create section and show the dropdown
         createSubfolderSection.style.display = 'none';
         select.style.display = 'block';
+        // Add user's subfolders
+        folders.forEach(folder => select.innerHTML += `<option value="${folder.name}">${folder.name}</option>`);
     }
-    
-    folders.forEach(folder => select.innerHTML += `<option value="${folder.name}">${folder.name}</option>`);
 
     // Also update folder filter
     const filterSelect = document.getElementById('folderSelect');

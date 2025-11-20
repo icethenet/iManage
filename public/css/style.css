@@ -1929,4 +1929,47 @@ body.logged-in .user-is-logged-out {
     padding-left: 15px;
 }
 
+/* OAuth Provider Cards */
+.oauth-providers-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 20px;
+    margin-top: 20px;
+}
+
+.oauth-provider-card {
+    background: white;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 20px;
+    text-align: center;
+}
+
+.oauth-provider-card h4 {
+    margin: 0 0 15px 0;
+    color: #333;
+}
+
+.provider-status {
+    padding: 8px 12px;
+    border-radius: 4px;
+    margin: 15px 0;
+    font-weight: 500;
+    font-size: 14px;
+}
+
+.provider-status.status-enabled {
+    background: #d4edda;
+    color: #155724;
+}
+
+.provider-status.status-disabled {
+    background: #f8d7da;
+    color: #721c24;
+}
+
+.oauth-provider-card .btn {
+    margin: 5px;
+}
+
 /* Remove old desktop-first media query - now using mobile-first approach above */
