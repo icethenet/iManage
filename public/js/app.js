@@ -13,6 +13,13 @@ document.addEventListener('DOMContentLoaded', function() {
     loadFolders();
     loadImages();
     document.getElementById('createSubfolderBtn')?.addEventListener('click', createSubfolderFromUpload);
+    // Register Service Worker for PWA capabilities
+    if ('serviceWorker' in navigator) {
+        const swPath = 'service-worker.js'; // Adjust if app served from subdirectory
+        navigator.serviceWorker.register(swPath).catch(err => {
+            console.warn('Service worker registration failed:', err);
+        });
+    }
 });
 
 function setupEventListeners() {
