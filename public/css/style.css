@@ -2555,3 +2555,184 @@ a:hover {
         flex: 1 0 100%;
     }
 }
+
+/* Enhanced Theme System Improvements */
+body[data-animations="disabled"] * {
+    transition: none !important;
+    animation: none !important;
+}
+
+body[data-animations="enabled"] {
+    transition: background-color 0.4s cubic-bezier(0.4, 0, 0.2, 1), 
+                color 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+body[data-animations="enabled"] * {
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Theme notification toast */
+.theme-notification {
+    position: fixed;
+    bottom: -60px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    padding: 12px 24px;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px var(--shadow-color);
+    z-index: 10000;
+    transition: bottom 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    border: 1px solid var(--border-color);
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.theme-notification.show {
+    bottom: 24px;
+}
+
+/* Animated toggle switch for animations setting */
+.toggle-switch {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    cursor: pointer;
+    user-select: none;
+}
+
+.toggle-switch input[type="checkbox"] {
+    display: none;
+}
+
+.toggle-slider {
+    position: relative;
+    width: 50px;
+    height: 26px;
+    background: var(--border-color);
+    border-radius: 13px;
+    transition: background-color 0.3s;
+}
+
+.toggle-slider::before {
+    content: '';
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    width: 20px;
+    height: 20px;
+    background: white;
+    border-radius: 50%;
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+.toggle-switch input:checked + .toggle-slider {
+    background: var(--accent-color);
+}
+
+.toggle-switch input:checked + .toggle-slider::before {
+    transform: translateX(24px);
+}
+
+.toggle-label {
+    font-size: 14px;
+    color: var(--text-secondary);
+}
+
+/* Enhanced theme modal for mobile */
+@media (max-width: 768px) {
+    .theme-modal {
+        padding: 0;
+    }
+    
+    .theme-modal-content {
+        max-width: 100%;
+        max-height: 100%;
+        border-radius: 0;
+        margin: 0;
+    }
+    
+    .theme-section {
+        padding: 20px;
+    }
+    
+    .color-schemes {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 12px;
+    }
+    
+    .scheme-btn {
+        padding: 12px;
+        font-size: 13px;
+    }
+}
+
+/* Accent light color support for subtle highlights */
+.gallery-item:hover {
+    box-shadow: 0 4px 12px var(--accent-light, rgba(0,123,255,0.2));
+}
+
+.btn-primary:hover {
+    background-color: var(--accent-hover);
+    box-shadow: 0 4px 12px var(--accent-light, rgba(0,123,255,0.3));
+}
+
+.theme-toggle:hover,
+.theme-settings:hover {
+    background-color: var(--accent-color);
+    transform: scale(1.1) rotate(10deg);
+}
+
+/* Smooth theme transition overlay */
+body::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: var(--bg-primary);
+    opacity: 0;
+    pointer-events: none;
+    z-index: 9999;
+    transition: opacity 0.3s;
+}
+
+body.theme-transitioning::before {
+    opacity: 0.5;
+}
+
+/* Enhanced scheme button animations */
+.scheme-btn {
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.scheme-btn:hover {
+    transform: translateY(-2px) scale(1.05);
+}
+
+.scheme-btn.active {
+    transform: scale(1.08);
+    animation: pulse 0.5s ease-out;
+}
+
+@keyframes pulse {
+    0%, 100% { box-shadow: 0 0 0 0 var(--accent-color); }
+    50% { box-shadow: 0 0 0 8px transparent; }
+}
+
+/* Keyboard shortcut hints */
+.theme-section h3::after {
+    content: attr(data-shortcut);
+    font-size: 11px;
+    font-weight: normal;
+    color: var(--text-secondary);
+    margin-left: 8px;
+    padding: 2px 6px;
+    background: var(--bg-primary);
+    border-radius: 4px;
+    font-family: monospace;
+}
+

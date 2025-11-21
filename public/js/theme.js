@@ -35,16 +35,55 @@ class ThemeManager {
             indigo: { name: 'Deep Indigo', color: '#6610f2', hover: '#510bc4' }
         };
 
-        this.currentTheme = localStorage.getItem('theme') || 'light';
+        this.currentTheme = localStorage.getItem('theme') || this.detectSystemTheme();
         this.currentScheme = localStorage.getItem('colorScheme') || 'blue';
         this.customAccent = localStorage.getItem('customAccent') || null;
+        this.animations = localStorage.getItem('animations') !== 'false';
 
         this.init();
+        this.setupSystemThemeListener();
+        this.setupKeyboardShortcuts();
+    }
+
+    detectSystemTheme() {
+        if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+            return 'dark';
+        }
+        return 'light';
+    }
+
+    setupSystemThemeListener() {
+        if (window.matchMedia) {
+            const darkModeQuery = window.matchMedia('(prefers-color-scheme: dark)');
+            darkModeQuery.addEventListener('change', (e) => {
+                if (!localStorage.getItem('theme')) {
+                    this.currentTheme = e.matches ? 'dark' : 'light';
+                    this.applyTheme();
+                    this.updateThemeIcon();
+                }
+            });
+        }
+    }
+
+    setupKeyboardShortcuts() {
+        document.addEventListener('keydown', (e) => {
+            // Ctrl/Cmd + Shift + D = Toggle Dark Mode
+            if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'D') {
+                e.preventDefault();
+                this.toggleTheme();
+            }
+            // Ctrl/Cmd + Shift + T = Open Theme Settings
+            if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'T') {
+                e.preventDefault();
+                this.openThemeSettings();
+            }
+        });
     }
 
     init() {
         this.applyTheme();
         this.applyColorScheme();
+        this.applyAnimations();
         this.createThemeControls();
     }
 
@@ -71,15 +110,36 @@ class ThemeManager {
 
         root.style.setProperty('--accent-color', accent);
         root.style.setProperty('--accent-hover', hover);
+        root.style.setProperty('--accent-light', this.lightenColor(accent, 20));
         
         document.body.setAttribute('data-scheme', this.currentScheme);
+        this.showThemeNotification(`${this.colorSchemes[this.currentScheme]?.name || 'Custom'} theme applied`);
+    }
+
+    applyAnimations() {
+        document.body.setAttribute('data-animations', this.animations ? 'enabled' : 'disabled');
+    }
+
+    toggleAnimations() {
+        this.animations = !this.animations;
+        localStorage.setItem('animations', this.animations);
+        this.applyAnimations();
+        this.showThemeNotification(`Animations ${this.animations ? 'enabled' : 'disabled'}`);
     }
 
     toggleTheme() {
-        this.currentTheme = this.currentTheme === 'light' ? 'dark' : 'light';
-        localStorage.setItem('theme', this.currentTheme);
-        this.applyTheme();
-        this.updateThemeIcon();
+        document.body.classList.add('theme-transitioning');
+        setTimeout(() => {
+            this.currentTheme = this.currentTheme === 'light' ? 'dark' : 'light';
+            localStorage.setItem('theme', this.currentTheme);
+            this.applyTheme();
+            this.updateThemeIcon();
+            this.showThemeNotification(`${this.currentTheme === 'dark' ? 'Dark' : 'Light'} mode activated`);
+            
+            setTimeout(() => {
+                document.body.classList.remove('theme-transitioning');
+            }, 300);
+        }, 150);
     }
 
     setColorScheme(scheme) {
@@ -109,6 +169,32 @@ class ThemeManager {
             .toString(16).slice(1);
     }
 
+    lightenColor(hex, percent) {
+        const num = parseInt(hex.replace('#', ''), 16);
+        const amt = Math.round(2.55 * percent);
+        const R = Math.min(255, (num >> 16) + amt);
+        const G = Math.min(255, (num >> 8 & 0x00FF) + amt);
+        const B = Math.min(255, (num & 0x0000FF) + amt);
+        return '#' + (0x1000000 + R * 0x10000 + G * 0x100 + B).toString(16).slice(1);
+    }
+
+    showThemeNotification(message) {
+        let notification = document.getElementById('themeNotification');
+        if (!notification) {
+            notification = document.createElement('div');
+            notification.id = 'themeNotification';
+            notification.className = 'theme-notification';
+            document.body.appendChild(notification);
+        }
+        notification.textContent = message;
+        notification.classList.add('show');
+        
+        clearTimeout(this.notificationTimeout);
+        this.notificationTimeout = setTimeout(() => {
+            notification.classList.remove('show');
+        }, 2000);
+    }
+
     createThemeControls() {
         // Add theme toggle button to nav
         const nav = document.querySelector('.nav-right');
@@ -133,6 +219,14 @@ class ThemeManager {
         const btn = document.querySelector('.theme-toggle');
         if (btn) {
             btn.innerHTML = this.currentTheme === 'dark' ? '☀️' : '🌙';
+        }
+    }
+
+    openThemeSettings() {
+        const modal = document.getElementById('themeModal');
+        if (modal) {
+            modal.style.display = 'flex';
+            this.updateSchemeButtons();
         }
     }
 
@@ -203,6 +297,15 @@ class ThemeManager {
                         </div>
                     </div>
 
+                    <div class="theme-section">
+                        <h3>Animations</h3>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="animationsToggle" ${this.animations ? 'checked' : ''}>
+                            <span class="toggle-slider"></span>
+                            <span class="toggle-label">Enable smooth animations and transitions</span>
+                        </label>
+                    </div>
+
                     <div class="theme-preview">
                         <h3>Preview</h3>
                         <div class="preview-box">
@@ -245,6 +348,12 @@ class ThemeManager {
             this.applyColorScheme();
             this.updateSchemeButtons();
             modal.querySelector('#accentPicker').value = this.colorSchemes[this.currentScheme].color;
+        };
+
+        modal.querySelector('#animationsToggle').onchange = (e) => {
+            this.animations = e.target.checked;
+            localStorage.setItem('animations', this.animations);
+            this.applyAnimations();
         };
 
         // Close on outside click
