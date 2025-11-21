@@ -21,8 +21,7 @@ function initializeApp() {
     // No need to call updatePageText() here - i18n.init() already did it
     
     setupEventListeners();
-    loadFolders();
-    loadImages();
+    // Note: loadFolders() and loadImages() are called from auth.js after login status is confirmed
     document.getElementById('createSubfolderBtn')?.addEventListener('click', createSubfolderFromUpload);
     // Register Service Worker for PWA capabilities
     if ('serviceWorker' in navigator) {

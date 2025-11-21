@@ -207,6 +207,14 @@ function updateUIAfterLogin(user) {
     document.body.classList.add('logged-in');
     document.body.classList.remove('logged-out');
     document.getElementById('username-display').textContent = user.username;
+    
+    // Load user-specific data after confirming login
+    if (typeof loadFolders === 'function') {
+        loadFolders();
+    }
+    if (typeof loadImages === 'function') {
+        loadImages();
+    }
 }
 
 function updateUIAfterLogout() {
