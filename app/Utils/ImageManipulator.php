@@ -295,6 +295,84 @@ class ImageManipulator {
     }
 
     /**
+     * Applies a sepia tone effect to the image.
+     *
+     * @param int $intensity Intensity of sepia effect (0-100, default 80).
+     */
+    public function sepia(int $intensity = 80): void {
+        $intensity = max(0, min(100, $intensity));
+        $factor = $intensity / 100.0;
+        
+        $width = imagesx($this->image);
+        $height = imagesy($this->image);
+        
+        for ($x = 0; $x < $width; $x++) {
+            for ($y = 0; $y < $height; $y++) {
+                $rgb = imagecolorat($this->image, $x, $y);
+                
+                // Extract RGB
+                $r = ($rgb >> 16) & 0xFF;
+                $g = ($rgb >> 8) & 0xFF;
+                $b = $rgb & 0xFF;
+                
+                // Apply sepia transformation matrix
+                $newR = min(255, (int)(($r * 0.393 + $g * 0.769 + $b * 0.189) * $factor + $r * (1 - $factor)));
+                $newG = min(255, (int)(($r * 0.349 + $g * 0.686 + $b * 0.168) * $factor + $g * (1 - $factor)));
+                $newB = min(255, (int)(($r * 0.272 + $g * 0.534 + $b * 0.131) * $factor + $b * (1 - $factor)));
+                
+                $newColor = imagecolorallocate($this->image, $newR, $newG, $newB);
+                imagesetpixel($this->image, $x, $y, $newColor);
+            }
+        }
+    }
+
+    /**
+     * Applies a vignette effect (darkened corners) to the image.
+     *
+     * @param int $strength Strength of vignette (0-100, default 50).
+     */
+    public function vignette(int $strength = 50): void {
+        $strength = max(0, min(100, $strength));
+        $factor = $strength / 100.0;
+        
+        $width = imagesx($this->image);
+        $height = imagesy($this->image);
+        
+        // Calculate center and max radius
+        $centerX = $width / 2;
+        $centerY = $height / 2;
+        $maxRadius = sqrt($centerX * $centerX + $centerY * $centerY);
+        
+        for ($x = 0; $x < $width; $x++) {
+            for ($y = 0; $y < $height; $y++) {
+                // Calculate distance from center
+                $dx = $x - $centerX;
+                $dy = $y - $centerY;
+                $distance = sqrt($dx * $dx + $dy * $dy);
+                
+                // Calculate vignette factor (1.0 at center, decreasing towards edges)
+                $vignetteFactor = 1.0 - (($distance / $maxRadius) * $factor);
+                $vignetteFactor = max(0, min(1, $vignetteFactor));
+                
+                $rgb = imagecolorat($this->image, $x, $y);
+                
+                // Extract RGB
+                $r = ($rgb >> 16) & 0xFF;
+                $g = ($rgb >> 8) & 0xFF;
+                $b = $rgb & 0xFF;
+                
+                // Apply vignette darkening
+                $newR = (int)($r * $vignetteFactor);
+                $newG = (int)($g * $vignetteFactor);
+                $newB = (int)($b * $vignetteFactor);
+                
+                $newColor = imagecolorallocate($this->image, $newR, $newG, $newB);
+                imagesetpixel($this->image, $x, $y, $newColor);
+            }
+        }
+    }
+
+    /**
      * Preserves transparency for PNG and GIF images during manipulations.
      *
      * @param GdImage|resource $newImage The new image resource.

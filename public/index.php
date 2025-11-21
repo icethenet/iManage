@@ -6,9 +6,11 @@
     <title>Image Management System</title>
     <link rel="manifest" href="/manifest.json">
     <meta name="theme-color" content="#1e88e5">
+    <link rel="icon" type="image/png" href="img/icons/icon-192.png">
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="css/gallery.css">
     <script defer src="js/offline.js"></script>
+    <script defer src="js/upload.js"></script>
 </head>
 <body>
     <div class="container">
@@ -73,17 +75,17 @@
                     
                     <form id="uploadForm" class="upload-form">
                         <div class="form-group">
-                            <label for="imageFile">Select Images:</label>
+                            <label for="imageFile">Select Images or Videos:</label>
                             <div class="file-input-wrapper" id="dropZone">
-                                <input type="file" id="imageFile" name="image" accept="image/*" multiple>
+                                <input type="file" id="imageFile" name="image" accept="image/*,.mp4,.mov,.mkv,.avi,.webm,video/mp4,video/quicktime,video/x-matroska,video/x-msvideo,video/webm" multiple>
                                 <div class="file-input-display">
                                     <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                         <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
                                         <polyline points="17 8 12 3 7 8"></polyline>
                                         <line x1="12" y1="3" x2="12" y2="15"></line>
                                     </svg>
-                                    <span class="file-name">Click to select images or drag and drop</span>
-                                    <small style="display: block; margin-top: 8px; color: #999;">Multiple files supported • JPG, PNG, GIF, WebP • Max 5MB each</small>
+                                    <span class="file-name">Click to select images or videos, or drag and drop</span>
+                                    <small style="display: block; margin-top: 8px; color: #999;">Multiple files supported • Images: JPG, PNG, GIF, WebP • Videos: MP4, MOV, MKV, AVI, WebM</small>
                                 </div>
                                 <div id="filePreview" class="file-preview"></div>
                             </div>
@@ -828,6 +830,28 @@
 
                     <!-- Settings Tab -->
                     <div id="admin-tab-settings" class="admin-tab-content">
+                    
+                    <!-- Upload Configuration Section -->
+                    <div class="admin-section">
+                        <h3>📤 Upload Configuration</h3>
+                        <div style="background: #f8f9fa; padding: 20px; border-radius: 8px;">
+                            <div class="form-group" style="max-width: 500px;">
+                                <label for="maxFileSizeMB">Maximum File Size (MB)</label>
+                                <div style="display: flex; gap: 10px; align-items: center; margin-top: 10px;">
+                                    <input type="number" id="maxFileSizeMB" class="form-control" min="1" max="50" step="0.5" value="5" style="flex: 0 0 120px;">
+                                    <input type="range" id="maxFileSizeSlider" min="1" max="50" step="0.5" value="5" style="flex: 1;" oninput="document.getElementById('maxFileSizeMB').value = this.value">
+                                    <span style="min-width: 60px; font-weight: bold;" id="maxFileSizeDisplay">5 MB</span>
+                                </div>
+                                <p style="margin-top: 10px; font-size: 12px; color: #666;">
+                                    Controls the maximum size for individual image uploads. Range: 1MB to 50MB.
+                                    <br><strong>Note:</strong> Changes take effect immediately but may require PHP restart for full effect depending on server configuration.
+                                </p>
+                                <button type="button" class="btn btn-primary" onclick="saveUploadSettings()" style="margin-top: 15px;">💾 Save Upload Settings</button>
+                                <div id="uploadSettingsStatus" style="margin-top: 10px;"></div>
+                            </div>
+                        </div>
+                    </div>
+                    
                     <!-- System Settings Section -->
                     
                     <!-- System Health -->
@@ -1324,18 +1348,20 @@
             <div class="modal-body">
                 <div class="modal-image" style="position: relative; display: inline-block;">
                     <img id="modalImage" src="" alt="" style="display: block;">
-                    <div id="cropCanvasContainer" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: none; z-index: 10; pointer-events: all;"></div>
+                    <div id="cropCanvasContainer" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: none; z-index: 10; pointer-events: none;"></div>
                 </div>
                 <div id="modalImageSpinner" class="spinner-overlay" style="display: none;">
                     <div class="spinner-inner"></div>
                 </div>
                 <div class="modal-details">
                     <div class="modal-metadata-section">
-                        <button id="editMetadataBtn" class="btn btn-sm edit-metadata-btn">Edit Info</button>
                         <div id="metadataViewMode">
                             <h2 id="modalTitle"></h2>
                             <p id="modalDescription"></p>
                             <p id="modalTags" style="color: #888; font-size: 14px;"></p>
+                        </div>
+                        <div style="margin-top: 10px;">
+                            <button id="editMetadataBtn" class="btn btn-sm edit-metadata-btn">✏️ Edit Info</button>
                         </div>
                         <div id="metadataEditMode" style="display: none;">
                             <div class="form-group">
@@ -1380,7 +1406,7 @@
                             </table>
                         </div>
                     </div>
-
+                    
                     <div class="modal-share-section">
                         <label class="share-label">
                             <input type="checkbox" id="shareImageCheckbox">
@@ -1432,6 +1458,18 @@
                             <button id="grayscale-btn" class="btn btn-sm">Grayscale</button>
                             <button id="flip-h-btn" class="btn btn-sm">Flip H</button>
                             <button id="flip-v-btn" class="btn btn-sm">Flip V</button>
+                            <button id="sharpen-btn" class="btn btn-sm">Sharpen</button>
+                            <button id="sepia-btn" class="btn btn-sm">Sepia</button>
+                            <button id="vignette-btn" class="btn btn-sm">Vignette</button>
+                        </div>
+
+                        <div class="tool-section">
+                            <label>Blur:</label>
+                            <div style="display: flex; gap: 10px; align-items: center; margin-bottom: 10px;">
+                                <input type="range" id="blurSlider" min="1" max="10" value="2" style="flex: 1;">
+                                <span id="blurValue" style="min-width: 30px;">2</span>
+                            </div>
+                            <button id="apply-blur-btn" class="btn btn-sm">Apply Blur</button>
                         </div>
 
                         <div class="tool-section">
@@ -1479,9 +1517,8 @@
     <script src="js/app.js"></script>
     <script src="js/crop-tool.js"></script>
     <script src="js/gallery.js"></script>
-    <script src="js/editor.js"></script>
+    <script src="js/editor.js?v=<?php echo time(); ?>"></script>
     <script src="js/auth.js"></script>
-    <script src="js/upload.js"></script>
 
     <script>
         /**

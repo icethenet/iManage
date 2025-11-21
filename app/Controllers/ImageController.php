@@ -66,7 +66,13 @@ class ImageController {
                 $encodedFolder = ($image['folder'] && $image['folder'] !== 'default') ? rawurlencode($image['folder']) : null;
                 $urlPathSegment = $username . ($encodedFolder ? '/' . $encodedFolder : '');
 
-                $image['thumbnail_url'] = $base . $uploadDir . '/' . $urlPathSegment . '/' . $this->config['thumb_dir'] . '/' . $image['filename'];
+                // For videos, use .jpg for thumbnail; for images, use original filename
+                $thumbFilename = $image['filename'];
+                if ($image['file_type'] === 'video') {
+                    $thumbFilename = pathinfo($image['filename'], PATHINFO_FILENAME) . '.jpg';
+                }
+                
+                $image['thumbnail_url'] = $base . $uploadDir . '/' . $urlPathSegment . '/' . $this->config['thumb_dir'] . '/' . $thumbFilename;
                 $image['original_url'] = $base . $uploadDir . '/' . $urlPathSegment . '/' . $this->config['original_dir'] . '/' . $image['filename'];
             }
 
@@ -118,7 +124,13 @@ class ImageController {
             $encodedFolder = ($image['folder'] && $image['folder'] !== 'default') ? rawurlencode($image['folder']) : null;
             $urlPathSegment = $username . ($encodedFolder ? '/' . $encodedFolder : '');
 
-            $image['thumbnail_url'] = $base . $uploadDir . '/' . $urlPathSegment . '/' . $this->config['thumb_dir'] . '/' . $image['filename'];
+            // For videos, use .jpg for thumbnail; for images, use original filename
+            $thumbFilename = $image['filename'];
+            if ($image['file_type'] === 'video') {
+                $thumbFilename = pathinfo($image['filename'], PATHINFO_FILENAME) . '.jpg';
+            }
+
+            $image['thumbnail_url'] = $base . $uploadDir . '/' . $urlPathSegment . '/' . $this->config['thumb_dir'] . '/' . $thumbFilename;
             $image['original_url'] = $base . $uploadDir . '/' . $urlPathSegment . '/' . $this->config['original_dir'] . '/' . $image['filename'];
             $image['metadata'] = $this->imageModel->getMetadata($id);
 
@@ -179,7 +191,13 @@ class ImageController {
             $encodedFolder = ($image['folder'] && $image['folder'] !== 'default') ? rawurlencode($image['folder']) : null;
             $urlPathSegment = $username . ($encodedFolder ? '/' . $encodedFolder : '');
 
-            $image['thumbnail_url'] = $base . $uploadDir . '/' . $urlPathSegment . '/' . $this->config['thumb_dir'] . '/' . $image['filename'];
+            // For videos, use .jpg for thumbnail; for images, use original filename
+            $thumbFilename = $image['filename'];
+            if ($image['file_type'] === 'video') {
+                $thumbFilename = pathinfo($image['filename'], PATHINFO_FILENAME) . '.jpg';
+            }
+
+            $image['thumbnail_url'] = $base . $uploadDir . '/' . $urlPathSegment . '/' . $this->config['thumb_dir'] . '/' . $thumbFilename;
             $image['original_url'] = $base . $uploadDir . '/' . $urlPathSegment . '/' . $this->config['original_dir'] . '/' . $image['filename'];
 
             // EXIF for shared images (subset, privacy: omit GPS)
@@ -229,12 +247,22 @@ class ImageController {
      * Upload new image
      */
     public function upload() {
-        // Debug logging disabled by default in cleanup mode.
-        // Leaving a no-op logger in place so calls to $logDebug() remain safe.
-        $debugEnabled = false;
-        $logDebug = function($message) {
-            // no-op during normal operation
+        // Upload debug logging can be enabled by either passing __debug=1 on the query string
+        // or by creating a file at logs/enable_upload_debug. When enabled, a log file
+        // logs/upload_debug.log will collect granular diagnostic entries.
+        $projectRoot = dirname(dirname(__DIR__));
+        $debugFlagFile = $projectRoot . DIRECTORY_SEPARATOR . 'logs' . DIRECTORY_SEPARATOR . 'enable_upload_debug';
+        $debugEnabled = (isset($_GET['__debug']) && $_GET['__debug'] === '1') || file_exists($debugFlagFile);
+        $uploadLogPath = $projectRoot . DIRECTORY_SEPARATOR . 'logs' . DIRECTORY_SEPARATOR . 'upload_debug.log';
+        $logDebug = function($message) use ($debugEnabled, $uploadLogPath) {
+            if (!$debugEnabled) return;
+            $line = '[' . date('c') . '] ' . $message . PHP_EOL;
+            @file_put_contents($uploadLogPath, $line, FILE_APPEND);
         };
+        $logDebug('--- BEGIN UPLOAD REQUEST ---');
+        $logDebug('Request method: ' . ($_SERVER['REQUEST_METHOD'] ?? 'UNKNOWN'));
+        $logDebug('Incoming $_FILES keys: ' . implode(', ', array_keys($_FILES ?: [])));
+        $logDebug('Incoming $_POST keys: ' . implode(', ', array_keys($_POST ?: [])));
 
         try {
             if (!isset($_SESSION['user_id'])) {
@@ -248,18 +276,23 @@ class ImageController {
 
             // Debug: Log what we received
             if (empty($_FILES)) {
-                $this->error('No files received. $_FILES is empty. Check that the form enctype is multipart/form-data.', 400);
+                $logDebug('$_FILES is empty. Raw content-type: ' . ($_SERVER['CONTENT_TYPE'] ?? 'none'));
+                $this->error('No files received. Ensure form has enctype="multipart/form-data".', 400);
                 return;
             }
 
             if (!isset($_FILES['image'])) {
                 $availableKeys = implode(', ', array_keys($_FILES));
+                $logDebug("Expected field 'image' missing. Available: " . ($availableKeys ?: 'none'));
                 $this->error("No 'image' file field found. Available fields: " . ($availableKeys ?: 'none'), 400);
                 return;
             }
 
             // Get form data for folder
             $folder = $_POST['folder'] ?? null;
+            if ($folder === null) {
+                $logDebug('Folder POST field missing; defaulting to user root.');
+            }
             $pathSegment = $folder && $folder !== 'default' ? $username . DIRECTORY_SEPARATOR . $folder : $username;
             
             $logDebug("Determined path segment for upload: '{$pathSegment}'.");
@@ -302,7 +335,8 @@ class ImageController {
                 'width' => $uploadResult['width'],
                 'height' => $uploadResult['height'],
                 'folder' => $folder,
-                'tags' => $tags
+                'tags' => $tags,
+                'file_type' => $uploadResult['file_type'] ?? 'image'
             ]);
 
             $logDebug("Database record created with ID: {$imageId}.");
@@ -360,13 +394,21 @@ class ImageController {
             $logDebug("Generating response URLs.");
             $encodedFolder = $folder ? rawurlencode($folder) : null;
             $urlPathSegment = $username . ($encodedFolder && $encodedFolder !== 'default' ? '/' . $encodedFolder : '');
-            $image['thumbnail_url'] = $base . $uploadDir . '/' . $urlPathSegment . '/' . $this->config['thumb_dir'] . '/' . $image['filename'];
+            
+            // For videos, use .jpg for thumbnail; for images, use original filename
+            $thumbFilename = $image['filename'];
+            if ($image['file_type'] === 'video') {
+                $thumbFilename = pathinfo($image['filename'], PATHINFO_FILENAME) . '.jpg';
+            }
+            
+            $image['thumbnail_url'] = $base . $uploadDir . '/' . $urlPathSegment . '/' . $this->config['thumb_dir'] . '/' . $thumbFilename;
             $image['original_url'] = $base . $uploadDir . '/' . $urlPathSegment . '/' . $this->config['original_dir'] . '/' . $image['filename'];
 
             $this->response([
                 'success' => true,
                 'message' => 'Image uploaded successfully',
-                'data' => $image
+                'data' => $image,
+                'debug' => $debugEnabled ? ['log_file' => 'logs/upload_debug.log'] : null
             ], 201);
         } catch (Exception $e) {            
             $logDebug("An exception occurred: " . $e->getMessage());
@@ -425,7 +467,14 @@ class ImageController {
             $username = $user ? $user['username'] : null;
             $encodedFolder = ($updatedImage['folder'] && $updatedImage['folder'] !== 'default') ? rawurlencode($updatedImage['folder']) : null;
             $urlPathSegment = $username . ($encodedFolder ? '/' . $encodedFolder : '');
-            $updatedImage['thumbnail_url'] = $base . $uploadDir . '/' . $urlPathSegment . '/' . $this->config['thumb_dir'] . '/' . $updatedImage['filename'];
+            
+            // For videos, use .jpg for thumbnail; for images, use original filename
+            $thumbFilename = $updatedImage['filename'];
+            if ($updatedImage['file_type'] === 'video') {
+                $thumbFilename = pathinfo($updatedImage['filename'], PATHINFO_FILENAME) . '.jpg';
+            }
+            
+            $updatedImage['thumbnail_url'] = $base . $uploadDir . '/' . $urlPathSegment . '/' . $this->config['thumb_dir'] . '/' . $thumbFilename;
             $updatedImage['original_url'] = $base . $uploadDir . '/' . $urlPathSegment . '/' . $this->config['original_dir'] . '/' . $updatedImage['filename'];
 
             $this->response([
@@ -588,6 +637,14 @@ class ImageController {
 
                 case 'sharpen':
                     $manipulator->sharpen();
+                    break;
+
+                case 'sepia':
+                    $manipulator->sepia($data['intensity'] ?? 80);
+                    break;
+
+                case 'vignette':
+                    $manipulator->vignette($data['strength'] ?? 50);
                     break;
 
                 case 'color_overlay':

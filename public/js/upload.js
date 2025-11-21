@@ -3,15 +3,51 @@
  * Handles file selection, preview, and upload
  */
 
-let selectedFiles = [];
+(function() {
+    'use strict';
 
-// Initialize upload functionality
-function initUpload() {
+    // Prevent double initialization
+    if (window._uploadModuleInitialized) {
+        console.warn('Upload module already initialized, skipping...');
+        return;
+    }
+    window._uploadModuleInitialized = true;
+
+    let selectedFiles = [];
+    let maxFileSizeMB = 10; // Default, will be updated from server
+
+    // Fetch upload configuration
+    async function loadUploadConfig() {
+        try {
+            const response = await fetch(`${API_BASE}?action=get_upload_config`);
+            const data = await response.json();
+            if (data.success) {
+                maxFileSizeMB = data.data.max_file_size_mb;
+                updateUploadHint();
+            }
+        } catch (error) {
+            console.warn('Could not load upload config, using defaults:', error);
+        }
+    }
+
+    // Update the upload hint text with current size limit
+    function updateUploadHint() {
+        const hintElement = document.querySelector('.file-input-display small');
+        if (hintElement) {
+            hintElement.textContent = `Multiple files supported • JPG, PNG, GIF, WebP • Max ${maxFileSizeMB}MB each`;
+        }
+    }
+
+    // Initialize upload functionality
+    function initUpload() {
     const dropZone = document.getElementById('dropZone');
     const fileInput = document.getElementById('imageFile');
     const uploadForm = document.getElementById('uploadForm');
 
     if (!dropZone || !fileInput || !uploadForm) return;
+
+    // Load upload configuration
+    loadUploadConfig();
 
     // Click to select files - use mousedown instead of click for better reliability
     dropZone.addEventListener('mousedown', (e) => {
@@ -70,16 +106,20 @@ function handleFiles(files) {
     const validFiles = [];
 
     fileArray.forEach(file => {
-        // Validate file type
-        if (!file.type.startsWith('image/')) {
-            showUploadStatus(`${file.name} is not an image file`, 'error');
+        // Validate file type - accept both images and videos
+        const isImage = file.type.startsWith('image/');
+        const isVideo = file.type.startsWith('video/') || 
+                       /\.(mp4|mov|mkv|avi|webm)$/i.test(file.name);
+        
+        if (!isImage && !isVideo) {
+            showUploadStatus(`${file.name} is not an image or video file`, 'error');
             return;
         }
 
-        // Validate file size (5MB max)
-        const maxSize = 5 * 1024 * 1024;
+        // Validate file size using dynamic limit
+        const maxSize = maxFileSizeMB * 1024 * 1024;
         if (file.size > maxSize) {
-            showUploadStatus(`${file.name} exceeds 5MB limit`, 'error');
+            showUploadStatus(`${file.name} exceeds ${maxFileSizeMB}MB limit`, 'error');
             return;
         }
 
@@ -206,10 +246,19 @@ async function handleUploadSubmit(e) {
         return;
     }
 
-    const folder = document.getElementById('imageFolder').value;
-    const bulkTitle = document.getElementById('bulkTitle').value.trim();
-    const bulkDescription = document.getElementById('bulkDescription').value.trim();
-    const bulkTags = document.getElementById('bulkTags').value.trim();
+    const imageFolderEl = document.getElementById('imageFolder');
+    if (!imageFolderEl) {
+        showUploadStatus('Upload form not ready (folder missing).', 'error');
+        return;
+    }
+    const folder = imageFolderEl.value;
+    // Bulk fields are optional (may be commented out in HTML); fall back to empty strings if absent
+    const bulkTitleEl = document.getElementById('bulkTitle');
+    const bulkDescriptionEl = document.getElementById('bulkDescription');
+    const bulkTagsEl = document.getElementById('bulkTags');
+    const bulkTitle = bulkTitleEl ? bulkTitleEl.value.trim() : '';
+    const bulkDescription = bulkDescriptionEl ? bulkDescriptionEl.value.trim() : '';
+    const bulkTags = bulkTagsEl ? bulkTagsEl.value.trim() : '';
     const progressContainer = document.getElementById('uploadProgress');
     progressContainer.innerHTML = '';
 
@@ -236,9 +285,9 @@ async function handleUploadSubmit(e) {
         selectedFiles = [];
         updateFilePreview();
         updateFileInputDisplay();
-        document.getElementById('bulkTitle').value = '';
-        document.getElementById('bulkDescription').value = '';
-        document.getElementById('bulkTags').value = '';
+        if (bulkTitleEl) bulkTitleEl.value = '';
+        if (bulkDescriptionEl) bulkDescriptionEl.value = '';
+        if (bulkTagsEl) bulkTagsEl.value = '';
         
         // Reload gallery
         setTimeout(() => {
@@ -305,7 +354,12 @@ async function uploadSingleFile(file, folder, bulkTitle, bulkDescription, bulkTa
             statusSpan.textContent = 'Complete';
             return { success: true };
         } else {
-            throw new Error(result.error || 'Upload failed');
+            // Provide helpful error messages for common issues
+            let errorMsg = result.error || 'Upload failed';
+            if (errorMsg.includes('upload_max_filesize') || errorMsg.includes('php.ini')) {
+                errorMsg = `File too large. Server limit exceeded. Try a smaller image or ask admin to increase PHP upload_max_filesize.`;
+            }
+            throw new Error(errorMsg);
         }
     } catch (error) {
         progressItem.classList.add('error');
@@ -334,3 +388,5 @@ function showUploadStatus(message, type = 'info') {
 
 // Initialize on page load
 document.addEventListener('DOMContentLoaded', initUpload);
+
+})(); // End of IIFE

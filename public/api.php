@@ -25,6 +25,15 @@ function autoload($class) {
 
 spl_autoload_register('autoload');
 
+// Load config and set PHP runtime limits dynamically
+$appConfig = require dirname(__DIR__) . DIRECTORY_SEPARATOR . 'config' . DIRECTORY_SEPARATOR . 'app.php';
+if (isset($appConfig['image']['max_file_size'])) {
+    $maxSizeMB = ceil($appConfig['image']['max_file_size'] / (1024 * 1024));
+    @ini_set('upload_max_filesize', $maxSizeMB . 'M');
+    @ini_set('post_max_size', ($maxSizeMB + 2) . 'M');
+    @ini_set('memory_limit', max(128, $maxSizeMB * 3) . 'M');
+}
+
 // Set error handling
 error_reporting(E_ALL);
 ini_set('display_errors', 0);
@@ -364,6 +373,30 @@ try {
             $controller = new AdminController();
             $controller->testOAuthProvider();
             break;
+
+        case 'admin_get_settings':
+            $controller = new AdminController();
+            $controller->getSettings();
+            break;
+
+        case 'admin_update_settings':
+            $controller = new AdminController();
+            $controller->updateSettings();
+            break;
+
+        case 'get_upload_config':
+            // Public endpoint to get upload configuration
+            $config = require dirname(__DIR__) . DIRECTORY_SEPARATOR . 'config' . DIRECTORY_SEPARATOR . 'app.php';
+            $maxSizeMB = round($config['image']['max_file_size'] / (1024 * 1024), 2);
+            header('Content-Type: application/json');
+            echo json_encode([
+                'success' => true,
+                'data' => [
+                    'max_file_size_mb' => $maxSizeMB,
+                    'allowed_types' => $config['image']['allowed_types']
+                ]
+            ]);
+            exit;
 
         // Folder endpoints
         case 'list_folders':

@@ -693,4 +693,97 @@ async function checkAdminAccess() {
 // Initialize admin check on page load
 document.addEventListener('DOMContentLoaded', function() {
     checkAdminAccess();
+    
+    // Load upload settings if on settings tab
+    if (document.getElementById('maxFileSizeMB')) {
+        loadUploadSettings();
+    }
+    
+    // Sync slider and input
+    const sizeInput = document.getElementById('maxFileSizeMB');
+    const sizeSlider = document.getElementById('maxFileSizeSlider');
+    const sizeDisplay = document.getElementById('maxFileSizeDisplay');
+    
+    if (sizeInput && sizeSlider && sizeDisplay) {
+        sizeInput.addEventListener('input', function() {
+            sizeSlider.value = this.value;
+            sizeDisplay.textContent = this.value + ' MB';
+        });
+        
+        sizeSlider.addEventListener('input', function() {
+            sizeInput.value = this.value;
+            sizeDisplay.textContent = this.value + ' MB';
+        });
+    }
 });
+
+/**
+ * Load current upload settings
+ */
+async function loadUploadSettings() {
+    try {
+        const response = await fetch('api.php?action=admin_get_settings');
+        const data = await response.json();
+        
+        if (data.success) {
+            const maxSizeMB = data.data.max_file_size_mb;
+            const sizeInput = document.getElementById('maxFileSizeMB');
+            const sizeSlider = document.getElementById('maxFileSizeSlider');
+            const sizeDisplay = document.getElementById('maxFileSizeDisplay');
+            
+            if (sizeInput) sizeInput.value = maxSizeMB;
+            if (sizeSlider) sizeSlider.value = maxSizeMB;
+            if (sizeDisplay) sizeDisplay.textContent = maxSizeMB + ' MB';
+        }
+    } catch (error) {
+        console.error('Error loading upload settings:', error);
+    }
+}
+
+/**
+ * Save upload settings
+ */
+async function saveUploadSettings() {
+    const statusDiv = document.getElementById('uploadSettingsStatus');
+    const maxSizeMB = parseFloat(document.getElementById('maxFileSizeMB').value);
+    
+    if (isNaN(maxSizeMB) || maxSizeMB < 1 || maxSizeMB > 50) {
+        statusDiv.innerHTML = '<div class="alert alert-error">❌ Please enter a value between 1 and 50 MB</div>';
+        return;
+    }
+    
+    statusDiv.innerHTML = '<div class="alert alert-info">⏳ Saving settings...</div>';
+    
+    try {
+        const response = await fetch('api.php?action=admin_update_settings', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                max_file_size_mb: maxSizeMB
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            statusDiv.innerHTML = '<div class="alert alert-success">✅ Settings saved successfully! Max upload size is now ' + maxSizeMB + ' MB</div>';
+            
+            // Update the UI display in system health if visible
+            const phpMaxUpload = document.getElementById('phpMaxUpload');
+            if (phpMaxUpload) {
+                phpMaxUpload.textContent = maxSizeMB + 'M';
+            }
+            
+            setTimeout(() => {
+                statusDiv.innerHTML = '';
+            }, 5000);
+        } else {
+            statusDiv.innerHTML = '<div class="alert alert-error">❌ ' + (data.error || 'Failed to save settings') + '</div>';
+        }
+    } catch (error) {
+        console.error('Error saving upload settings:', error);
+        statusDiv.innerHTML = '<div class="alert alert-error">❌ Network error. Please try again.</div>';
+    }
+}

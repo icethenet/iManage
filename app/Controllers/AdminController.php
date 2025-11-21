@@ -579,4 +579,78 @@ class AdminController {
             error_log("Failed to log security event: " . $e->getMessage());
         }
     }
+    
+    /**
+     * Get application settings
+     */
+    public function getSettings() {
+        if (!$this->requireAdmin()) return;
+        
+        $config = require __DIR__ . '/../../config/app.php';
+        
+        $this->jsonResponse([
+            'success' => true,
+            'data' => [
+                'max_file_size' => $config['image']['max_file_size'],
+                'max_file_size_mb' => round($config['image']['max_file_size'] / (1024 * 1024), 2),
+                'allowed_types' => $config['image']['allowed_types'],
+                'default_quality' => $config['image']['default_quality'],
+                'thumbnail_width' => $config['image']['thumbnail_width'],
+                'thumbnail_height' => $config['image']['thumbnail_height'],
+            ]
+        ]);
+    }
+    
+    /**
+     * Update application settings
+     */
+    public function updateSettings() {
+        if (!$this->requireAdmin()) return;
+        
+        $input = json_decode(file_get_contents('php://input'), true);
+        
+        if (!isset($input['max_file_size_mb'])) {
+            $this->jsonResponse(['success' => false, 'error' => 'Missing max_file_size_mb parameter']);
+            return;
+        }
+        
+        $maxFileSizeMB = floatval($input['max_file_size_mb']);
+        
+        // Validate range (1MB to 50MB)
+        if ($maxFileSizeMB < 1 || $maxFileSizeMB > 50) {
+            $this->jsonResponse(['success' => false, 'error' => 'Max file size must be between 1MB and 50MB']);
+            return;
+        }
+        
+        $maxFileSizeBytes = (int)($maxFileSizeMB * 1024 * 1024);
+        
+        // Update config file
+        $configPath = __DIR__ . '/../../config/app.php';
+        $config = require $configPath;
+        $config['image']['max_file_size'] = $maxFileSizeBytes;
+        
+        // Write updated config
+        $configContent = "<?php\n/**\n * Application Configuration\n * Cross-Platform (Windows/Linux/macOS)\n */\n\nreturn " . var_export($config, true) . ";\n";
+        
+        if (file_put_contents($configPath, $configContent) === false) {
+            $this->jsonResponse(['success' => false, 'error' => 'Failed to update configuration file']);
+            return;
+        }
+        
+        // Set PHP runtime limits for current request
+        @ini_set('upload_max_filesize', $maxFileSizeMB . 'M');
+        @ini_set('post_max_size', ($maxFileSizeMB + 2) . 'M');
+        
+        $this->logSecurityEvent($_SESSION['user_id'], $_SESSION['username'], 'settings_change', 
+            "Updated max file size to {$maxFileSizeMB}MB");
+        
+        $this->jsonResponse([
+            'success' => true,
+            'data' => [
+                'max_file_size' => $maxFileSizeBytes,
+                'max_file_size_mb' => $maxFileSizeMB,
+                'message' => 'Settings updated successfully'
+            ]
+        ]);
+    }
 }

@@ -25,7 +25,7 @@ class ImageUploadHandler {
     }
 
     /**
-     * Processes the uploaded image file.
+     * Processes the uploaded file (image or video).
      *
      * @param array $file The $_FILES['image'] array.
      * @param string $pathSegment The user- and folder-specific path (e.g., "John/Asian Girls").
@@ -40,31 +40,47 @@ class ImageUploadHandler {
             return ['success' => false, 'errors' => $errors];
         }
 
-        // 2. Validate file type and size
-        // Support multiple possible config key names for backwards compatibility.
-        $allowedMimes = $this->config['image']['allowed_mimes'] ?? [];
-        $allowedExts = $this->config['image']['allowed_types'] ?? [];
-        $maxSize = $this->config['image']['max_size'] ?? ($this->config['image']['max_file_size'] ?? 0);
+        // 2. Detect file type (image or video)
+        $finfo = new finfo(FILEINFO_MIME_TYPE);
+        $detectedMime = $finfo->file($file['tmp_name']);
+        $fileType = $this->detectFileType($detectedMime);
+        
+        if (!$fileType) {
+            return ['success' => false, 'errors' => ['Unsupported file type. Only images and videos are allowed.']];
+        }
 
-        // Validate by MIME first (recommended), then fallback to extension check.
+        // 3. Validate file type and size based on detected type
+        if (!isset($this->config[$fileType])) {
+            return ['success' => false, 'errors' => ['File type configuration not found.']];
+        }
+        
+        $config = $this->config[$fileType];
         $fileMime = $file['type'];
         $fileExt = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
         
-        // Additional security: Verify actual file content (magic bytes)
-        $finfo = new finfo(FILEINFO_MIME_TYPE);
-        $detectedMime = $finfo->file($file['tmp_name']);
-        
-        // Whitelist of truly safe image MIME types
-        $safeMimeTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
-        if (!in_array($detectedMime, $safeMimeTypes, true)) {
-            $errors[] = 'File content does not match allowed image types. Detected: ' . htmlspecialchars($detectedMime);
+        $allowedMimes = $config['allowed_mimes'] ?? [];
+        $allowedExts = $config['allowed_types'] ?? [];
+        $maxSize = $config['max_file_size'] ?? 0;
+
+        // For images, verify magic bytes for security
+        if ($fileType === 'image') {
+            $safeMimeTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+            if (!in_array($detectedMime, $safeMimeTypes, true)) {
+                $errors[] = 'File content does not match allowed image types. Detected: ' . htmlspecialchars($detectedMime);
+            }
+        } else if ($fileType === 'video') {
+            // For videos, verify magic bytes are valid video format
+            $safeVideoMimes = ['video/mp4', 'video/quicktime', 'video/x-msvideo', 'video/x-matroska', 'video/webm'];
+            if (!in_array($detectedMime, $safeVideoMimes, true)) {
+                $errors[] = 'File content does not match allowed video types. Detected: ' . htmlspecialchars($detectedMime);
+            }
         }
 
-        $mimeOk = empty($allowedMimes) || in_array($fileMime, $allowedMimes, true);
+        $mimeOk = empty($allowedMimes) || in_array($detectedMime, $allowedMimes, true);
         $extOk = empty($allowedExts) || in_array($fileExt, $allowedExts, true);
 
         if (!($mimeOk || $extOk)) {
-            $errors[] = 'Invalid file type: ' . htmlspecialchars($fileMime) . '. Only JPG, PNG, GIF, and WEBP are allowed.';
+            $errors[] = 'Invalid file type: ' . htmlspecialchars($fileMime) . ' (detected: ' . htmlspecialchars($detectedMime) . ')';
         }
 
         if ($maxSize > 0 && $file['size'] > $maxSize) {
@@ -75,7 +91,7 @@ class ImageUploadHandler {
             return ['success' => false, 'errors' => $errors];
         }
 
-        // 3. Prepare paths and new filename
+        // 4. Prepare paths and new filename
         $originalName = $file['name'];
         $extension = pathinfo($originalName, PATHINFO_EXTENSION);
         $newFilename = pathinfo($originalName, PATHINFO_FILENAME) . '_' . uniqid() . '.' . $extension;
@@ -85,7 +101,7 @@ class ImageUploadHandler {
         $pristineDir = $this->baseUploadPath . DIRECTORY_SEPARATOR . $pathSegment . DIRECTORY_SEPARATOR . 'pristine';
         $destinationPath = $originalDir . DIRECTORY_SEPARATOR . $newFilename;
 
-        // 4. Create directories if they don't exist
+        // 5. Create directories if they don't exist
         foreach ([$originalDir, $thumbDir, $pristineDir] as $dir) {
             if (!is_dir($dir)) {
                 if (!mkdir($dir, 0775, true)) {
@@ -95,36 +111,62 @@ class ImageUploadHandler {
             }
         }
 
-        // 5. Move the uploaded file
+        // 6. Move the uploaded file
         if (!move_uploaded_file($file['tmp_name'], $destinationPath)) {
             $errors[] = 'Failed to move uploaded file. This is likely a file permissions issue on the server in the \'public/uploads\' directory.';
             return ['success' => false, 'errors' => $errors];
         }
 
-        // 6. Create a pristine backup immediately (so we have an original copy)
+        // 7. Create a pristine backup immediately
         $pristinePath = $pristineDir . DIRECTORY_SEPARATOR . $newFilename;
         if (!file_exists($pristinePath)) {
-            // Try to copy; if it fails, log an error but continue (we don't want to fail the entire upload for a backup issue)
             try {
                 if (!@copy($destinationPath, $pristinePath)) {
-                    // If copy failed, attempt to change permissions and retry once
                     @chmod($pristineDir, 0775);
                     @copy($destinationPath, $pristinePath);
                 }
             } catch (Exception $e) {
-                // Non-fatal: continue but note that pristine wasn't created
                 error_log('Warning: failed to create pristine backup for ' . $destinationPath . ' - ' . $e->getMessage());
             }
         }
 
-        // 7. Create the thumbnail
+        // 8. Create the thumbnail
         $thumbPath = $thumbDir . DIRECTORY_SEPARATOR . $newFilename;
+        $thumbnailFilename = $newFilename;
+        
+        // For videos, generate JPG thumbnail
+        if ($fileType === 'video') {
+            $thumbnailFilename = pathinfo($newFilename, PATHINFO_FILENAME) . '.jpg';
+            $thumbPath = $thumbDir . DIRECTORY_SEPARATOR . $thumbnailFilename;
+        }
+        
         try {
-            $manipulator = new ImageManipulator($destinationPath);
-            $thumbWidth = $this->config['image']['thumb_width'] ?? ($this->config['image']['thumbnail_width'] ?? 200);
-            $thumbHeight = $this->config['image']['thumb_height'] ?? ($this->config['image']['thumbnail_height'] ?? 200);
-            $manipulator->thumbnail($thumbWidth, $thumbHeight);
-            $manipulator->save($thumbPath);
+            if ($fileType === 'image') {
+                // Image thumbnail using ImageManipulator
+                $manipulator = new ImageManipulator($destinationPath);
+                $thumbWidth = $config['thumbnail_width'] ?? 200;
+                $thumbHeight = $config['thumbnail_height'] ?? 200;
+                $manipulator->thumbnail($thumbWidth, $thumbHeight);
+                $manipulator->save($thumbPath);
+            } else {
+                // Video thumbnail using FFmpeg
+                require_once dirname(__FILE__) . DIRECTORY_SEPARATOR . 'VideoThumbnailGenerator.php';
+                $videoThumb = new VideoThumbnailGenerator();
+                
+                if (!$videoThumb->isAvailable()) {
+                    // FFmpeg not available - create a placeholder thumbnail
+                    $this->createPlaceholderThumbnail($thumbPath, 'VIDEO');
+                } else {
+                    $timestamp = $config['thumbnail_timestamp'] ?? 1;
+                    $thumbWidth = $config['thumbnail_width'] ?? 200;
+                    $thumbHeight = $config['thumbnail_height'] ?? 200;
+                    
+                    if (!$videoThumb->generateThumbnail($destinationPath, $thumbPath, $timestamp, $thumbWidth, $thumbHeight)) {
+                        // Fallback to placeholder if generation fails
+                        $this->createPlaceholderThumbnail($thumbPath, 'VIDEO');
+                    }
+                }
+            }
         } catch (Exception $e) {
             $errors[] = 'Failed to create thumbnail: ' . $e->getMessage();
             // Clean up the original file if thumbnail fails
@@ -134,18 +176,82 @@ class ImageUploadHandler {
             return ['success' => false, 'errors' => $errors];
         }
 
-        // 7. Get image dimensions
-        list($width, $height) = getimagesize($destinationPath);
+        // 9. Get file dimensions
+        $width = 0;
+        $height = 0;
+        
+        if ($fileType === 'image') {
+            list($width, $height) = getimagesize($destinationPath);
+        } else {
+            // Try to get video dimensions
+            require_once dirname(__FILE__) . DIRECTORY_SEPARATOR . 'VideoThumbnailGenerator.php';
+            $videoThumb = new VideoThumbnailGenerator();
+            if ($videoThumb->isAvailable()) {
+                $dimensions = $videoThumb->getVideoDimensions($destinationPath);
+                if ($dimensions) {
+                    $width = $dimensions['width'];
+                    $height = $dimensions['height'];
+                }
+            }
+        }
 
         return [
             'success'       => true,
             'filename'      => $newFilename,
             'original_name' => $originalName,
-            'mime_type'     => $file['type'],
+            'mime_type'     => $detectedMime,
             'file_size'     => $file['size'],
             'width'         => $width,
             'height'        => $height,
+            'file_type'     => $fileType,
+            'thumbnail'     => $thumbnailFilename, // May differ from filename for videos
         ];
+    }
+    
+    /**
+     * Detect if uploaded file is image or video
+     * 
+     * @param string $mimeType
+     * @return string|null 'image' or 'video' or null if unsupported
+     */
+    private function detectFileType(string $mimeType): ?string {
+        if (strpos($mimeType, 'image/') === 0) {
+            return 'image';
+        }
+        
+        if (strpos($mimeType, 'video/') === 0 && !empty($this->config['video']['enabled'])) {
+            return 'video';
+        }
+        
+        return null;
+    }
+    
+    /**
+     * Create a simple placeholder thumbnail for videos
+     * 
+     * @param string $outputPath
+     * @param string $text
+     */
+    private function createPlaceholderThumbnail(string $outputPath, string $text = 'VIDEO'): void {
+        $width = 200;
+        $height = 200;
+        
+        $image = imagecreatetruecolor($width, $height);
+        $bgColor = imagecolorallocate($image, 45, 45, 45);
+        $textColor = imagecolorallocate($image, 255, 255, 255);
+        
+        imagefill($image, 0, 0, $bgColor);
+        
+        $fontSize = 5;
+        $textWidth = imagefontwidth($fontSize) * strlen($text);
+        $textHeight = imagefontheight($fontSize);
+        $x = ($width - $textWidth) / 2;
+        $y = ($height - $textHeight) / 2;
+        
+        imagestring($image, $fontSize, $x, $y, $text, $textColor);
+        
+        imagejpeg($image, $outputPath, 85);
+        imagedestroy($image);
     }
 
     public function deleteImage(string $filename, string $pathSegment): void {

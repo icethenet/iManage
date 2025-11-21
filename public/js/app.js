@@ -45,7 +45,8 @@ function setupEventListeners() {
     document.getElementById('searchInput').addEventListener('keyup', debounce(searchImages, 500));
 
     // Upload form
-    document.getElementById('uploadForm').addEventListener('submit', handleImageUpload);
+    // Disabled legacy single-file handler (multi-file logic now lives in upload.js)
+    // document.getElementById('uploadForm').addEventListener('submit', handleImageUpload);
 
     // File input
     const imageFileInput = document.getElementById('imageFile');
@@ -228,10 +229,14 @@ function displayGallery(images) {
     gallery.innerHTML = images.map(image => {
         // Add cache-busting timestamp to thumbnail URLs to force reload after manipulations
         const thumbnailUrl = `${image.thumbnail_url}?t=${new Date().getTime()}`;
+        const isVideo = image.file_type === 'video';
+        const videoIcon = isVideo ? '<div class="video-indicator">▶️ VIDEO</div>' : '';
+        
         return `
-        <div class="gallery-item" onclick="openImageModal(${image.id})">
+        <div class="gallery-item ${isVideo ? 'is-video' : ''}" onclick="openImageModal(${image.id})">
             <div class="gallery-item-folder-label">${image.folder}</div>
             <img src="${thumbnailUrl}" alt="${image.title || image.original_name}">
+            ${videoIcon}
             <div class="gallery-item-overlay">
                 <button class="btn btn-sm" onclick="openImageModal(${image.id}); return false;">View</button>
                 <button class="btn btn-sm btn-danger" onclick="deleteImageQuick(${image.id}); return false;">Delete</button>
@@ -297,7 +302,36 @@ async function openImageModal(imageId) {
 
         if (data.success) {
             const image = data.data;
-            document.getElementById('modalImage').src = image.original_url;
+            const isVideo = image.file_type === 'video';
+            const modalImage = document.getElementById('modalImage');
+            const modalImageContainer = modalImage.parentElement;
+            
+            // Clear previous content
+            const existingVideo = modalImageContainer.querySelector('video');
+            if (existingVideo) {
+                existingVideo.remove();
+            }
+            
+            if (isVideo) {
+                // Hide image, show video player
+                modalImage.style.display = 'none';
+                const video = document.createElement('video');
+                video.controls = true;
+                video.style.maxWidth = '100%';
+                video.style.maxHeight = '70vh';
+                video.style.display = 'block';
+                video.src = image.original_url;
+                modalImageContainer.insertBefore(video, modalImage);
+                
+                // Hide image manipulation tools for videos
+                document.querySelector('.modal-tools').style.display = 'none';
+            } else {
+                // Show image, hide any video
+                modalImage.style.display = 'block';
+                modalImage.src = image.original_url;
+                document.querySelector('.modal-tools').style.display = 'block';
+            }
+            
             document.getElementById('modalTitle').textContent = image.title || image.original_name;
             document.getElementById('modalDescription').textContent = image.description || 'No description';
             document.getElementById('modalTags').textContent = image.tags ? `Tags: ${image.tags}` : '';
@@ -305,14 +339,16 @@ async function openImageModal(imageId) {
             document.getElementById('modalFileSize').textContent = `${(image.file_size / 1024 / 1024).toFixed(2)}MB`;
             document.getElementById('modalCreated').textContent = new Date(image.created_at).toLocaleDateString();
 
-            // Auto-fill tool dimensions with the image's current size
-            document.getElementById('resizeWidth').value = image.width;
-            document.getElementById('resizeHeight').value = image.height;
+            // Auto-fill tool dimensions with the image's current size (only for images)
+            if (!isVideo) {
+                document.getElementById('resizeWidth').value = image.width;
+                document.getElementById('resizeHeight').value = image.height;
 
-            // Reset sliders and any live preview filters from previous images
-            document.getElementById('brightnessSlider').value = 0;
-            document.getElementById('contrastSlider').value = 0;
-            document.getElementById('modalImage').style.filter = 'none';
+                // Reset sliders and any live preview filters from previous images
+                document.getElementById('brightnessSlider').value = 0;
+                document.getElementById('contrastSlider').value = 0;
+                document.getElementById('modalImage').style.filter = 'none';
+            }
 
             // Set the share checkbox status
             document.getElementById('shareImageCheckbox').checked = !!parseInt(image.shared);
@@ -330,14 +366,14 @@ async function openImageModal(imageId) {
 
             document.getElementById('imageModal').classList.add('active');
 
-            // EXIF display logic
+            // EXIF display logic (only for images)
             const exifWrapper = document.getElementById('exifToggleWrapper');
             const exifSection = document.getElementById('exifSection');
             const exifTableBody = document.querySelector('#exifTable tbody');
             const toggleExifBtn = document.getElementById('toggleExifBtn');
             exifSection.style.display = 'none';
             toggleExifBtn.textContent = 'Show EXIF';
-            if (image.exif && typeof image.exif === 'object') {
+            if (!isVideo && image.exif && typeof image.exif === 'object') {
                 exifWrapper.style.display = 'block';
                 exifTableBody.innerHTML = '';
                 Object.keys(image.exif).forEach(key => {
@@ -608,7 +644,17 @@ function loadFolders() {
                 displayFolderSelect(data.data);
                 displayFoldersList(data.data);
             } else {
-                console.warn('Unexpected folders response', data);
+                // Gracefully handle authentication required (user not logged in or session expired)
+                if (data.error && (data.error.includes('Authentication') || data.error.includes('Session expired') || data.error.includes('required'))) {
+                    // Silently set default folder option for guest/expired session users
+                    const select = document.getElementById('imageFolder');
+                    if (select) {
+                        select.innerHTML = '<option value="default">Default</option>';
+                    }
+                    // Don't log errors for expected authentication failures
+                } else {
+                    console.warn('Unexpected folders response', data);
+                }
             }
         })
         .catch(error => console.error('Error loading folders:', error));

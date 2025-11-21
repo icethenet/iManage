@@ -2,6 +2,7 @@
 // const API_BASE = './api.php';
 
 document.addEventListener('DOMContentLoaded', () => {
+    
     // Get common elements for modal operations
     const modalImage = document.getElementById('modalImage');
     const modalStatusMessage = document.getElementById('modal-status-message');
@@ -20,6 +21,14 @@ document.addEventListener('DOMContentLoaded', () => {
         document.querySelectorAll('.modal-tools button, .modal-actions button').forEach(btn => {
             if (btn.id !== 'revert-image-btn') { // Revert button is handled by its own listener
                 btn.disabled = isLoading;
+                // Ensure proper visual state
+                if (!isLoading) {
+                    btn.style.pointerEvents = '';
+                    btn.style.opacity = '';
+                } else {
+                    btn.style.pointerEvents = 'none';
+                    btn.style.opacity = '0.6';
+                }
             }
         });
     }
@@ -60,6 +69,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (typeof loadImages === 'function') {
                     loadImages();
                 }
+                // Clear success message after 2 seconds
+                setTimeout(() => {
+                    if (modalStatusMessage) modalStatusMessage.textContent = '';
+                }, 2000);
             } else {
                 setModalLoadingState(false, `Error: ${result.error || 'An unknown error occurred.'}`, true);
             }
@@ -154,6 +167,22 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('grayscale-btn')?.addEventListener('click', () => manipulateImage('grayscale'));
     document.getElementById('flip-h-btn')?.addEventListener('click', () => manipulateImage('flip_horizontal'));
     document.getElementById('flip-v-btn')?.addEventListener('click', () => manipulateImage('flip_vertical'));
+    document.getElementById('sharpen-btn')?.addEventListener('click', () => manipulateImage('sharpen'));
+    document.getElementById('sepia-btn')?.addEventListener('click', () => manipulateImage('sepia', { intensity: 80 }));
+    document.getElementById('vignette-btn')?.addEventListener('click', () => manipulateImage('vignette', { strength: 50 }));
+
+    // Blur slider
+    const blurSlider = document.getElementById('blurSlider');
+    const blurValue = document.getElementById('blurValue');
+    if (blurSlider && blurValue) {
+        blurSlider.addEventListener('input', (e) => {
+            blurValue.textContent = e.target.value;
+        });
+    }
+    document.getElementById('apply-blur-btn')?.addEventListener('click', () => {
+        const radius = parseInt(document.getElementById('blurSlider')?.value || '2');
+        manipulateImage('blur', { radius });
+    });
 
     document.getElementById('revert-image-btn')?.addEventListener('click', async () => {
         const imageId = modalImage.dataset.imageId;

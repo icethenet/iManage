@@ -141,8 +141,8 @@ class Image {
      */
     public function create($data) {
         $query = "INSERT INTO {$this->table} 
-                  (user_id, title, description, filename, original_name, mime_type, file_size, width, height, folder, tags)
-                  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"; // Removed shared from here
+                  (user_id, title, description, filename, original_name, mime_type, file_size, width, height, folder, tags, file_type)
+                  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
         
         $stmt = $this->db->prepare($query);
         $stmt->execute([
@@ -156,7 +156,8 @@ class Image {
             $data['width'] ?? null,
             $data['height'] ?? null,
             $data['folder'] ?? 'default',
-            $data['tags'] ?? ''
+            $data['tags'] ?? '',
+            $data['file_type'] ?? 'image'
         ]);
 
         return $this->db->lastInsertId();

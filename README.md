@@ -10,9 +10,10 @@ A powerful, mobile-first image management system with advanced editing capabilit
 ## ✨ Features
 
 ### Core Functionality
-- 📤 **Upload & Organize** - Upload images and organize them into custom folders
+- 📤 **Upload & Organize** - Upload images and videos, organize into custom folders
 - 🔍 **Smart Search** - Full-text search across image names and folders
 - 🖼️ **Image Gallery** - Beautiful, responsive grid layout with hover previews
+- 🎬 **Video Support** - Upload videos with automatic thumbnail generation (requires FFmpeg)
 - 📱 **Mobile-First Design** - Optimized for all devices (320px to desktop)
 - 🔐 **User Authentication** - Secure login with session management
 - 🔑 **OAuth 2.0 Social Login** - Sign in with Google, Facebook, GitHub, or Microsoft
@@ -21,7 +22,7 @@ A powerful, mobile-first image management system with advanced editing capabilit
 - ✂️ **Crop Tool** - Interactive canvas-based cropping with real-time preview
 - 🔄 **Rotate & Flip** - 90° rotation and horizontal/vertical flip
 - 📏 **Resize** - Scale images to specific dimensions
-- 🎨 **Filters** - Grayscale, brightness, contrast, sharpen, color overlay
+- 🎨 **Filters** - Grayscale, brightness, contrast, sharpen, blur, sepia, vignette, color overlay
 - 💾 **Non-Destructive** - Keep pristine copies, revert anytime
 
 ### Advanced Features
@@ -31,6 +32,7 @@ A powerful, mobile-first image management system with advanced editing capabilit
 - ⚡ **RESTful API** - JSON-based API for all operations
 - 📦 **Auto Thumbnails** - Automatic thumbnail generation for fast loading
 - 🎭 **OAuth Integration** - Support for Google, Facebook, GitHub, Microsoft login
+- ⚙️ **Admin Settings** - Configure max upload size (1-50MB) dynamically without editing config files
 
 ## 🚀 Quick Start & Installation
 
@@ -128,6 +130,9 @@ Problem: "Permission denied on uploads" → Re-run permission commands above.
 Problem: "share_token column not found" → Run `php tools/add_share_token_column.php`.
 Problem: "Can't save manipulated images" → Run `php tools/check_file_paths.php` and verify permissions.
 Problem: OAuth redirect loop → Confirm `state` parameter stored in session and callback domain matches provider configuration.
+Problem: "File exceeds upload_max_filesize" → Login as admin, go to Admin → Settings tab, and increase the "Maximum File Size" setting. Changes take effect immediately.
+Problem: Video thumbnail generation fails → Install FFmpeg (see docs/VIDEO_SUPPORT.md). Without FFmpeg, a placeholder thumbnail is created automatically.
+Problem: Buttons become unresponsive after operations → Clear browser cache (Ctrl+Shift+Delete) and hard refresh (Ctrl+F5).
 
 ### Quick Reference
 | Task | Command/URL |
@@ -156,6 +161,7 @@ Recent additions include share token support and OAuth tables (see `database/mig
 ### Feature Documentation
 - **Share Link Feature** (`docs/SHARE_LINK_FEATURE.md`) - Public sharing system
 - **Crop Tool Guide** (`docs/CROP_TOOL_QUICKSTART.md`) - Cropping walkthrough
+- **Video Support** (`docs/VIDEO_SUPPORT.md`) - Video upload and thumbnail generation
 - **Security Overview** (`docs/SECURITY_HARDENING_SUMMARY.md`) - Hardening summary
 - **OAuth Setup Guide** (`docs/OAUTH_SETUP.md`) - Provider configuration
 
@@ -226,6 +232,9 @@ All operations preserve the original image in `pristine/` folder:
 | **Brightness** | Adjust image brightness (-100 to +100) |
 | **Contrast** | Adjust image contrast (-100 to +100) |
 | **Sharpen** | Apply sharpening filter |
+| **Blur** | Gaussian blur (1-10 intensity) |
+| **Sepia** | Vintage sepia tone effect |
+| **Vignette** | Darkened corners effect |
 | **Color Overlay** | Apply color tint with opacity |
 
 ## 🌐 Cross-Platform
@@ -274,10 +283,29 @@ DELETE /api.php?action=deleteFolder&id={id} # Delete folder
 ## 🧪 Testing Tools
 
 Located in `tools/` directory:
+
+### Validation Scripts
 - `test_schema.php` - Validate database schema
 - `test_security_simple.php` - Security audit
 - `test_share_link.php` - Share functionality test
 - `verify_crop_tool.php` - Crop tool validation
+
+### Upload Testing Scripts
+- `test_upload_endpoint.php` / `.ps1` - Single upload test with debug log tail
+- `test_upload_matrix.php` / `.ps1` - Comprehensive test matrix (valid, batch, errors)
+- `stress_upload_parallel.php` - High-volume parallel stress test with size limit validation
+
+Run upload tests after installation to verify configuration:
+```bash
+# Single upload test
+php tools/test_upload_endpoint.php
+
+# Full matrix (Windows PowerShell)
+.\tools\test_upload_matrix.ps1
+
+# Stress test (parallel uploads, size limits)
+php tools/stress_upload_parallel.php
+```
 
 ## 🤝 Contributing
 
@@ -348,10 +376,10 @@ Icon Note: Add real PNG icons (`icon-192.png`, `icon-512.png`, `icon-512-maskabl
 - [x] Two-factor authentication (2FA)
 - [x] Batch image operations
 - [x] Image metadata (EXIF) display
-- [ ] Advanced filters (blur, sepia, vignette)
+- [x] Advanced filters (blur, sepia, vignette)
 - [x] Drag-and-drop upload
 - [x] Progressive Web App (PWA)
-- [ ] Video thumbnail support
+- [x] Video thumbnail support
 - [ ] Multi-language support
 
 ---
