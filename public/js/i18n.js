@@ -22,8 +22,8 @@ class I18n {
      * Initialize i18n system
      */
     async init() {
-        // Detect language
-        this.currentLanguage = this.detectLanguage();
+        // Detect language (checks URL, localStorage, browser, then server)
+        this.currentLanguage = await this.detectLanguage();
         
         // Load translations
         await this.loadTranslations();
@@ -46,7 +46,7 @@ class I18n {
     /**
      * Detect user's preferred language
      */
-    detectLanguage() {
+    async detectLanguage() {
         // Priority 1: URL parameter (?lang=es)
         const urlParams = new URLSearchParams(window.location.search);
         if (urlParams.has('lang')) {
@@ -62,7 +62,20 @@ class I18n {
             return stored;
         }
 
-        // Priority 3: Browser language
+        // Priority 3: Server session/cookie
+        try {
+            const response = await fetch('./api.php?action=get_current_language');
+            if (response.ok) {
+                const data = await response.json();
+                if (data.success && data.language && this.supportedLanguages.includes(data.language)) {
+                    return data.language;
+                }
+            }
+        } catch (error) {
+            console.warn('Could not fetch language from server:', error);
+        }
+
+        // Priority 4: Browser language
         const browserLang = this.detectBrowserLanguage();
         if (browserLang && this.supportedLanguages.includes(browserLang)) {
             return browserLang;

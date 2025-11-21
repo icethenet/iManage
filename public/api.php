@@ -453,7 +453,11 @@ try {
             exit;
 
         case 'set_language':
-            $lang = $_POST['language'] ?? $_GET['language'] ?? null;
+            // Handle JSON body for POST requests
+            $input = file_get_contents('php://input');
+            $data = json_decode($input, true);
+            $lang = $data['language'] ?? $_POST['language'] ?? $_GET['language'] ?? null;
+            
             if ($lang && preg_match('/^[a-z]{2}$/', $lang)) {
                 $_SESSION['language'] = $lang;
                 setcookie('language', $lang, time() + (30 * 24 * 60 * 60), '/');
@@ -497,7 +501,13 @@ try {
 
         case 'get_current_language':
             header('Content-Type: application/json');
-            $lang = $_SESSION['language'] ?? 'en';
+            // Check session first, then cookie, then default to 'en'
+            $lang = $_SESSION['language'] ?? $_COOKIE['language'] ?? 'en';
+            // Ensure it's a valid language code
+            $supportedLangs = ['en', 'es', 'fr', 'de', 'zh'];
+            if (!in_array($lang, $supportedLangs)) {
+                $lang = 'en';
+            }
             $languageNames = [
                 'en' => 'English',
                 'es' => 'Español',
