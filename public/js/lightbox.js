@@ -50,21 +50,9 @@ class Lightbox {
                     break;
             }
         });
-        
-        // Attach to gallery images
-        this.attachToGallery();
     }
     
-    attachToGallery() {
-        // Attach click handlers to all gallery images
-        document.addEventListener('click', (e) => {
-            const galleryItem = e.target.closest('.gallery-item');
-            if (galleryItem && e.target.tagName === 'IMG') {
-                e.preventDefault();
-                this.openFromGallery(galleryItem);
-            }
-        });
-    }
+    // Method to be called directly when user clicks lightbox button
     
     openFromGallery(galleryItem) {
         // Get all visible gallery items

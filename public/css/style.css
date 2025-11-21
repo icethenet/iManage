@@ -720,6 +720,33 @@ body.logged-in .user-is-logged-out {
     box-shadow: 0 1px 3px rgba(0,0,0,0.2);
 }
 
+/* Gallery Item Overlay Buttons */
+.gallery-item-overlay {
+    opacity: 0;
+    transition: opacity 0.2s ease;
+    display: flex;
+    gap: 5px;
+    flex-wrap: wrap;
+    justify-content: center;
+    padding: 5px;
+}
+
+.gallery-item:hover .gallery-item-overlay {
+    opacity: 1;
+}
+
+.gallery-item-overlay .btn {
+    font-size: 12px;
+    padding: 6px 10px;
+    white-space: nowrap;
+}
+
+@media (max-width: 768px) {
+    .gallery-item-overlay {
+        opacity: 1; /* Always show on mobile */
+    }
+}
+
 /* Settings Page Styles */
 .settings-container {
     max-width: 800px;

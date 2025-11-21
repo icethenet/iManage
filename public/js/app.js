@@ -284,12 +284,18 @@ function displayGallery(images) {
         const videoIcon = isVideo ? '<div class="video-indicator">▶️ VIDEO</div>' : '';
         
         return `
-        <div class="gallery-item ${isVideo ? 'is-video' : ''}" onclick="openImageModal(${image.id})">
+        <div class="gallery-item ${isVideo ? 'is-video' : ''}" 
+             data-imageid="${image.id}"
+             data-filename="${image.title || image.original_name}"
+             data-filesize="${image.file_size || ''}"
+             data-uploaddate="${image.uploaded_at || ''}"
+             onclick="openImageModal(${image.id})">
             <div class="gallery-item-folder-label">${image.folder}</div>
             <img src="${thumbnailUrl}" alt="${image.title || image.original_name}">
             ${videoIcon}
             <div class="gallery-item-overlay">
-                <button class="btn btn-sm" onclick="openImageModal(${image.id}); return false;">View</button>
+                <button class="btn btn-sm" onclick="openImageModal(${image.id}); return false;">✏️ Edit</button>
+                <button class="btn btn-sm" onclick="event.stopPropagation(); if(window.lightbox) window.lightbox.openFromGallery(this.closest('.gallery-item')); return false;">🔍 View</button>
                 <button class="btn btn-sm btn-danger" onclick="deleteImageQuick(${image.id}); return false;">Delete</button>
             </div>
         </div>
