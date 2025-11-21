@@ -1537,6 +1537,7 @@
     </div>
 
     <script src="js/i18n.js?v=<?php echo time(); ?>"></script>
+    <script src="js/theme.js?v=<?php echo time(); ?>"></script>
     <script src="js/app.js?v=<?php echo time(); ?>"></script>
     <script src="js/lightbox.js?v=<?php echo time(); ?>"></script>
     <script src="js/crop-tool.js?v=<?php echo time(); ?>"></script>

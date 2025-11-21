@@ -1,3 +1,15 @@
+/* CSS Variables for Theming */
+:root {
+    --bg-primary: #f8f9fa;
+    --bg-secondary: #ffffff;
+    --text-primary: #212529;
+    --text-secondary: #6c757d;
+    --border-color: #dee2e6;
+    --shadow-color: rgba(0,0,0,0.1);
+    --accent-color: #007bff;
+    --accent-hover: #0056b3;
+}
+
 /* Main Styles - Mobile First Approach */
 * {
     margin: 0;
@@ -7,10 +19,11 @@
 
 body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background-color: #f0f2f5;
-    color: #333;
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 .container {
@@ -2310,3 +2323,235 @@ body.logged-in .user-is-logged-out {
 }
 
 /* Remove old desktop-first media query - now using mobile-first approach above */
+
+/* ====================================
+   THEME SYSTEM STYLES
+   ==================================== */
+
+/* Dark Theme */
+body[data-theme="dark"] {
+    --bg-primary: #1a1a1a;
+    --bg-secondary: #2d2d2d;
+    --text-primary: #e9ecef;
+    --text-secondary: #adb5bd;
+    --border-color: #495057;
+    --shadow-color: rgba(0,0,0,0.3);
+}
+
+body[data-theme="dark"] .container {
+    background: var(--bg-secondary);
+}
+
+body[data-theme="dark"] .header {
+    background: linear-gradient(135deg, #434343 0%, #000000 100%);
+}
+
+body[data-theme="dark"] .modal-content {
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+}
+
+body[data-theme="dark"] input,
+body[data-theme="dark"] textarea,
+body[data-theme="dark"] select {
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    border-color: var(--border-color);
+}
+
+body[data-theme="dark"] .gallery-item {
+    background: var(--bg-secondary);
+    border-color: var(--border-color);
+}
+
+body[data-theme="dark"] .folder-item {
+    background: var(--bg-secondary);
+    border-color: var(--border-color);
+}
+
+/* Apply Accent Color */
+.btn-primary,
+button[type="submit"],
+.nav-link.active {
+    background: var(--accent-color) !important;
+    border-color: var(--accent-color) !important;
+}
+
+.btn-primary:hover,
+button[type="submit"]:hover {
+    background: var(--accent-hover) !important;
+    border-color: var(--accent-hover) !important;
+}
+
+a {
+    color: var(--accent-color);
+}
+
+a:hover {
+    color: var(--accent-hover);
+}
+
+/* Theme Control Buttons */
+.theme-toggle,
+.theme-settings {
+    background: rgba(255,255,255,0.2);
+    border: 1px solid rgba(255,255,255,0.3);
+    color: white;
+    border-radius: 50%;
+    width: 44px;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    margin: 0 5px;
+}
+
+.theme-toggle:hover,
+.theme-settings:hover {
+    background: rgba(255,255,255,0.3);
+    transform: scale(1.1);
+}
+
+/* Theme Modal */
+.theme-modal-content {
+    max-width: 600px;
+    max-height: 90vh;
+    overflow-y: auto;
+}
+
+.theme-section {
+    margin-bottom: 30px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.theme-section:last-child {
+    border-bottom: none;
+}
+
+.theme-section h3 {
+    margin-bottom: 15px;
+    color: var(--text-primary);
+    font-size: 1.2em;
+}
+
+/* Theme Mode Toggle */
+.theme-mode-toggle {
+    display: flex;
+    gap: 10px;
+}
+
+.theme-mode-btn {
+    flex: 1;
+    padding: 15px;
+    border: 2px solid var(--border-color);
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 16px;
+    font-weight: 500;
+}
+
+.theme-mode-btn:hover {
+    border-color: var(--accent-color);
+    transform: translateY(-2px);
+}
+
+.theme-mode-btn.active {
+    background: var(--accent-color);
+    color: white;
+    border-color: var(--accent-color);
+}
+
+/* Color Schemes */
+.color-schemes {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 10px;
+}
+
+.scheme-btn {
+    padding: 15px;
+    border: 3px solid transparent;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    color: white;
+    font-weight: 500;
+    font-size: 14px;
+    text-align: center;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+}
+
+.scheme-btn:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+}
+
+.scheme-btn.active {
+    border-color: white;
+    box-shadow: 0 0 0 3px var(--accent-color);
+}
+
+/* Custom Accent */
+.custom-accent {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+#accentPicker {
+    width: 80px;
+    height: 44px;
+    border: 2px solid var(--border-color);
+    border-radius: 8px;
+    cursor: pointer;
+}
+
+#applyAccent,
+#resetAccent {
+    padding: 10px 20px;
+}
+
+/* Theme Preview */
+.preview-box {
+    padding: 20px;
+    background: var(--bg-primary);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.preview-box p {
+    color: var(--text-primary);
+    flex-basis: 100%;
+    margin-top: 10px;
+}
+
+/* Mobile adjustments for theme modal */
+@media (max-width: 768px) {
+    .theme-modal-content {
+        max-width: 95%;
+        margin: 20px;
+    }
+    
+    .color-schemes {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    
+    .custom-accent {
+        flex-wrap: wrap;
+    }
+    
+    #accentPicker {
+        flex: 1 0 100%;
+    }
+}
