@@ -306,6 +306,73 @@ body.logged-in .user-is-logged-out {
     cursor: pointer;
 }
 
+/* Gallery Grid */
+.gallery {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 20px;
+    margin: 20px 0;
+}
+
+@media (max-width: 480px) {
+    .gallery {
+        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+        gap: 15px;
+    }
+}
+
+@media (min-width: 1200px) {
+    .gallery {
+        grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    }
+}
+
+.gallery-item {
+    position: relative;
+    aspect-ratio: 1;
+    border-radius: 8px;
+    overflow: hidden;
+    cursor: pointer;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.gallery-item:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+}
+
+.gallery-item img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+.gallery-item.is-video::after {
+    content: '▶️';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 48px;
+    opacity: 0.8;
+    pointer-events: none;
+}
+
+.video-indicator {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    background: rgba(0,0,0,0.8);
+    color: white;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: bold;
+    z-index: 2;
+}
+
 /* Upload Container */
 .upload-container {
     max-width: 800px;
@@ -722,13 +789,19 @@ body.logged-in .user-is-logged-out {
 
 /* Gallery Item Overlay Buttons */
 .gallery-item-overlay {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: linear-gradient(to top, rgba(0,0,0,0.8), transparent);
+    padding: 15px 10px 10px;
     opacity: 0;
     transition: opacity 0.2s ease;
     display: flex;
     gap: 5px;
     flex-wrap: wrap;
     justify-content: center;
-    padding: 5px;
+    z-index: 3;
 }
 
 .gallery-item:hover .gallery-item-overlay {
@@ -736,14 +809,30 @@ body.logged-in .user-is-logged-out {
 }
 
 .gallery-item-overlay .btn {
-    font-size: 12px;
+    font-size: 11px;
     padding: 6px 10px;
     white-space: nowrap;
+    background: rgba(255,255,255,0.95);
+    border: none;
+}
+
+.gallery-item-overlay .btn:hover {
+    background: white;
+}
+
+.gallery-item-overlay .btn-danger {
+    background: rgba(220, 53, 69, 0.95);
+    color: white;
+}
+
+.gallery-item-overlay .btn-danger:hover {
+    background: rgb(200, 35, 51);
 }
 
 @media (max-width: 768px) {
     .gallery-item-overlay {
         opacity: 1; /* Always show on mobile */
+        background: linear-gradient(to top, rgba(0,0,0,0.9), transparent);
     }
 }
 
