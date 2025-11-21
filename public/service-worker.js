@@ -1,5 +1,5 @@
 // Increment version to bust old cached scripts (upload.js changes)
-const VERSION = 'v5';
+const VERSION = 'v6';
 const CORE_CACHE = `imanage-core-${VERSION}`;
 const IMAGE_CACHE = `imanage-images-${VERSION}`;
 const API_CACHE = `imanage-api-${VERSION}`;
@@ -8,8 +8,6 @@ const CORE_ASSETS = [
   '/manifest.json',
   '/css/style.css',
   '/css/gallery.css',
-  '/js/app.js',
-  '/js/upload.js',
   '/offline.html'
 ];
 // Max entries for runtime caches
