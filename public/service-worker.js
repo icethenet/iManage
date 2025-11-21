@@ -1,5 +1,5 @@
 // Increment version to bust old cached scripts (upload.js changes)
-const VERSION = 'v4';
+const VERSION = 'v5';
 const CORE_CACHE = `imanage-core-${VERSION}`;
 const IMAGE_CACHE = `imanage-images-${VERSION}`;
 const API_CACHE = `imanage-api-${VERSION}`;
