@@ -32,7 +32,7 @@ function initializeApp() {
             console.warn('Service worker registration failed:', err);
         });
     }
-});
+}
 
 function setupEventListeners() {
     // Navigation

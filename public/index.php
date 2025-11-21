@@ -10,6 +10,9 @@
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="css/gallery.css">
     <script defer src="js/i18n.js"></script>
+    <script defer src="js/app.js"></script>
+    <script defer src="js/auth.js"></script>
+    <script defer src="js/admin.js"></script>
     <script defer src="js/offline.js"></script>
     <script defer src="js/upload.js"></script>
 </head>

@@ -93,9 +93,14 @@ class I18n {
         try {
             const response = await fetch(`./api.php?action=get_translations&lang=${this.currentLanguage}`);
             if (response.ok) {
-                this.translations = await response.json();
+                try {
+                    this.translations = await response.json();
+                } catch (e) {
+                    console.warn('Failed to parse translations JSON:', e);
+                    this.translations = {};
+                }
             } else {
-                console.warn('Failed to load translations, using defaults');
+                console.warn('Failed to load translations (status ' + response.status + '), using defaults');
                 this.translations = {};
             }
         } catch (error) {

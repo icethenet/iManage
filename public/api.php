@@ -53,8 +53,19 @@ if (PHP_VERSION_ID >= 70300) {
 // Start session
 session_start();
 
-// Initialize i18n (multi-language support)
-I18n::init();
+// Initialize i18n (multi-language support) - only set language, don't start session again
+if (class_exists('I18n')) {
+    if (!isset($_SESSION['language'])) {
+        // Detect language on first call
+        $lang = 'en';
+        if (isset($_GET['lang']) && preg_match('/^[a-z]{2}$/', $_GET['lang'])) {
+            $lang = $_GET['lang'];
+        } elseif (isset($_COOKIE['language'])) {
+            $lang = $_COOKIE['language'];
+        }
+        $_SESSION['language'] = $lang;
+    }
+}
 
 // Set security headers AFTER session (prevents XSS, MIME sniffing, clickjacking)
 header('X-Content-Type-Options: nosniff');
@@ -424,21 +435,32 @@ try {
 
         // Language/i18n endpoints
         case 'get_translations':
-            I18n::init();
-            $lang = $_GET['lang'] ?? I18n::getCurrentLanguage();
+            $lang = $_GET['lang'] ?? $_SESSION['language'] ?? 'en';
+            $lang = preg_replace('/[^a-z]/', '', $lang);
+            $filePath = dirname(__DIR__) . DIRECTORY_SEPARATOR . 'i18n' . DIRECTORY_SEPARATOR . $lang . '.php';
+            
+            if (!file_exists($filePath)) {
+                $filePath = dirname(__DIR__) . DIRECTORY_SEPARATOR . 'i18n' . DIRECTORY_SEPARATOR . 'en.php';
+            }
+            
             header('Content-Type: application/json');
-            echo I18n::getJSON($lang);
+            if (file_exists($filePath)) {
+                $translations = require($filePath);
+                echo json_encode($translations);
+            } else {
+                echo json_encode([]);
+            }
             exit;
 
         case 'set_language':
-            I18n::init();
             $lang = $_POST['language'] ?? $_GET['language'] ?? null;
-            if ($lang) {
-                I18n::setLanguage($lang);
+            if ($lang && preg_match('/^[a-z]{2}$/', $lang)) {
+                $_SESSION['language'] = $lang;
+                setcookie('language', $lang, time() + (30 * 24 * 60 * 60), '/');
                 header('Content-Type: application/json');
                 echo json_encode([
                     'success' => true,
-                    'language' => I18n::getCurrentLanguage()
+                    'language' => $lang
                 ]);
             } else {
                 http_response_code(400);
@@ -452,12 +474,19 @@ try {
 
         case 'get_supported_languages':
             header('Content-Type: application/json');
-            $languages = I18n::getSupportedLanguages();
+            $languages = ['en', 'es', 'fr', 'de', 'zh'];
+            $languageNames = [
+                'en' => 'English',
+                'es' => 'Español',
+                'fr' => 'Français',
+                'de' => 'Deutsch',
+                'zh' => '简体中文'
+            ];
             $data = [];
             foreach ($languages as $code) {
                 $data[] = [
                     'code' => $code,
-                    'name' => I18n::getLanguageName($code)
+                    'name' => $languageNames[$code]
                 ];
             }
             echo json_encode([
@@ -467,12 +496,19 @@ try {
             exit;
 
         case 'get_current_language':
-            I18n::init();
             header('Content-Type: application/json');
+            $lang = $_SESSION['language'] ?? 'en';
+            $languageNames = [
+                'en' => 'English',
+                'es' => 'Español',
+                'fr' => 'Français',
+                'de' => 'Deutsch',
+                'zh' => '简体中文'
+            ];
             echo json_encode([
                 'success' => true,
-                'language' => I18n::getCurrentLanguage(),
-                'name' => I18n::getLanguageName(I18n::getCurrentLanguage())
+                'language' => $lang,
+                'name' => $languageNames[$lang] ?? 'English'
             ]);
             exit;
 

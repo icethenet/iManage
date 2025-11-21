@@ -132,13 +132,14 @@ class I18n {
      * Load translation file
      */
     private static function loadTranslations($language) {
-        $filePath = __DIR__ . '/i18n/' . $language . '.php';
+        // Files are in project root i18n/ directory
+        $filePath = dirname(dirname(dirname(__FILE__))) . DIRECTORY_SEPARATOR . 'i18n' . DIRECTORY_SEPARATOR . $language . '.php';
         
         if (file_exists($filePath)) {
             self::$translations = require($filePath);
         } else {
             // Fallback to English if language file not found
-            $filePath = __DIR__ . '/i18n/en.php';
+            $filePath = dirname(dirname(dirname(__FILE__))) . DIRECTORY_SEPARATOR . 'i18n' . DIRECTORY_SEPARATOR . 'en.php';
             self::$translations = require($filePath);
         }
     }
@@ -199,12 +200,14 @@ class I18n {
             $language = self::$currentLanguage;
         }
 
-        $filePath = __DIR__ . '/i18n/' . $language . '.php';
+        // Files are in project root i18n/ directory
+        $filePath = dirname(dirname(dirname(__FILE__))) . DIRECTORY_SEPARATOR . 'i18n' . DIRECTORY_SEPARATOR . $language . '.php';
         
         if (file_exists($filePath)) {
             $translations = require($filePath);
         } else {
-            $translations = require(__DIR__ . '/i18n/en.php');
+            $filePath = dirname(dirname(dirname(__FILE__))) . DIRECTORY_SEPARATOR . 'i18n' . DIRECTORY_SEPARATOR . 'en.php';
+            $translations = require($filePath);
         }
 
         return json_encode($translations);
