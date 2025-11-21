@@ -33,6 +33,26 @@ function initializeApp() {
 }
 
 function setupEventListeners() {
+    // Hamburger menu toggle
+    const hamburgerMenu = document.getElementById('hamburgerMenu');
+    const nav = document.querySelector('.nav');
+    if (hamburgerMenu && nav) {
+        hamburgerMenu.addEventListener('click', function() {
+            this.classList.toggle('active');
+            nav.classList.toggle('mobile-open');
+        });
+        
+        // Close menu when clicking a nav link on mobile
+        document.querySelectorAll('.nav-link').forEach(link => {
+            link.addEventListener('click', function() {
+                if (window.innerWidth < 768) {
+                    hamburgerMenu.classList.remove('active');
+                    nav.classList.remove('mobile-open');
+                }
+            });
+        });
+    }
+    
     // Navigation
     document.querySelectorAll('.nav-link').forEach(link => {
         link.addEventListener('click', function(e) {

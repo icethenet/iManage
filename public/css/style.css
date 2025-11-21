@@ -69,14 +69,54 @@ button, .btn, .nav-link {
     background: #fafafa;
     border-bottom: 1px solid #eee;
     gap: 10px;
+    position: relative;
 }
 
+/* Hamburger Menu Button */
+.hamburger-menu {
+    display: block;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 8px;
+    z-index: 1000;
+    align-self: flex-start;
+}
+
+.hamburger-menu span {
+    display: block;
+    width: 25px;
+    height: 3px;
+    background: #333;
+    margin: 5px 0;
+    transition: 0.3s;
+    border-radius: 2px;
+}
+
+.hamburger-menu.active span:nth-child(1) {
+    transform: rotate(-45deg) translate(-5px, 6px);
+}
+
+.hamburger-menu.active span:nth-child(2) {
+    opacity: 0;
+}
+
+.hamburger-menu.active span:nth-child(3) {
+    transform: rotate(45deg) translate(-5px, -6px);
+}
+
+/* Mobile: Hide nav items by default, show when menu is open */
 .nav-left,
 .nav-right {
-    display: flex;
+    display: none;
     flex-direction: column;
     gap: 8px;
     align-items: stretch;
+}
+
+.nav.mobile-open .nav-left,
+.nav.mobile-open .nav-right {
+    display: flex;
 }
 
 /* Language Selector */
@@ -104,6 +144,17 @@ button, .btn, .nav-link {
 
 /* Tablet and up */
 @media (min-width: 768px) {
+    /* Hide hamburger menu on desktop */
+    .hamburger-menu {
+        display: none;
+    }
+    
+    /* Always show nav items on desktop */
+    .nav-left,
+    .nav-right {
+        display: flex !important;
+    }
+    
     .nav {
         flex-direction: row;
         justify-content: space-between;

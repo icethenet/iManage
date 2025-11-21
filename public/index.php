@@ -20,6 +20,11 @@
 
         <!-- Navigation -->
         <nav class="nav">
+            <button class="hamburger-menu" id="hamburgerMenu" aria-label="Toggle menu">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
             <div class="nav-left user-is-logged-in">
                 <a href="#" class="nav-link active" data-view="gallery" data-i18n="nav_gallery">Gallery</a>
                 <a href="#" class="nav-link" data-view="upload" data-i18n="nav_upload">Upload</a>
