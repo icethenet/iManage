@@ -1,4 +1,7 @@
-const CACHE_NAME = 'imanage-core-v1';
+const VERSION = 'v2';
+const CORE_CACHE = `imanage-core-${VERSION}`;
+const IMAGE_CACHE = `imanage-images-${VERSION}`;
+const API_CACHE = `imanage-api-${VERSION}`;
 const CORE_ASSETS = [
   '/',
   '/manifest.json',
@@ -7,16 +10,23 @@ const CORE_ASSETS = [
   '/js/app.js',
   '/offline.html'
 ];
+// Max entries for runtime caches
+const MAX_IMAGES = 60; // thumbnails & viewed images
+const MAX_API = 40; // metadata responses
 
 self.addEventListener('install', event => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then(cache => cache.addAll(CORE_ASSETS)).then(() => self.skipWaiting())
+    caches.open(CORE_CACHE)
+      .then(cache => cache.addAll(CORE_ASSETS))
+      .then(() => self.skipWaiting())
   );
 });
 
 self.addEventListener('activate', event => {
   event.waitUntil(
-    caches.keys().then(keys => Promise.all(keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k)))).then(() => self.clients.claim())
+    caches.keys().then(keys => Promise.all(
+      keys.filter(k => ![CORE_CACHE, IMAGE_CACHE, API_CACHE].includes(k)).map(k => caches.delete(k))
+    )).then(() => self.clients.claim())
   );
 });
 
@@ -33,12 +43,16 @@ self.addEventListener('fetch', event => {
     return;
   }
 
-  // For images in uploads: cache-first then network
+  // Image caching (cache-first)
   if (url.pathname.startsWith('/uploads/') || url.pathname.includes('/public/uploads/')) {
     event.respondWith(
-      caches.open('imanage-images').then(cache => cache.match(req).then(match => {
-        return match || fetch(req).then(res => {
-          if (res.ok) cache.put(req, res.clone());
+      caches.open(IMAGE_CACHE).then(cache => cache.match(req).then(match => {
+        if (match) return match;
+        return fetch(req).then(res => {
+          if (res.ok) {
+            cache.put(req, res.clone());
+            enforceLimit(cache, MAX_IMAGES);
+          }
           return res;
         });
       }))
@@ -46,14 +60,40 @@ self.addEventListener('fetch', event => {
     return;
   }
 
-  // For other requests: try network first, fall back to cache
+  // API responses (network-first with fallback & stale-while-revalidate flavor)
+  if (url.pathname.endsWith('api.php')) {
+    event.respondWith(
+      fetch(req).then(res => {
+        if (res.ok) {
+          const clone = res.clone();
+          caches.open(API_CACHE).then(cache => {
+            cache.put(req, clone);
+            enforceLimit(cache, MAX_API);
+          });
+        }
+        return res;
+      }).catch(() => caches.open(API_CACHE).then(cache => cache.match(req)))
+    );
+    return;
+  }
+
+  // Other assets (network-first, fallback to cache)
   event.respondWith(
     fetch(req).then(res => {
       if (res.ok) {
         const clone = res.clone();
-        caches.open(CACHE_NAME).then(cache => cache.put(req, clone));
+        caches.open(CORE_CACHE).then(cache => cache.put(req, clone));
       }
       return res;
     }).catch(() => caches.match(req))
   );
 });
+
+function enforceLimit(cache, max) {
+  cache.keys().then(keys => {
+    if (keys.length > max) {
+      const toDelete = keys.slice(0, keys.length - max);
+      toDelete.forEach(k => cache.delete(k));
+    }
+  });
+}

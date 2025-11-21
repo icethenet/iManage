@@ -317,6 +317,7 @@ Implemented:
 - Offline fallback page (`public/offline.html`)
 - Theme color + manifest link in `index.php`
 - Automatic registration in `public/js/app.js`
+- Generated placeholder icons via `php tools/generate_pwa_icons.php` (files in `public/img/icons/`). Replace with branded assets when ready.
 
 What Works Offline:
 - Previously visited UI shell (HTML/CSS/JS)
@@ -337,6 +338,7 @@ Next Enhancement Ideas:
 - Versioned cache purge strategy
 - Workbox integration for easier runtime strategies
 - Push notifications for completed remote operations (optional)
+ - Fine-grained image transformation caching layer
 
 Icon Note: Add real PNG icons (`icon-192.png`, `icon-512.png`, `icon-512-maskable.png`) to `public/img/icons/` (placeholder README provided).
 
