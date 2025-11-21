@@ -122,6 +122,34 @@ class ImageController {
             $image['original_url'] = $base . $uploadDir . '/' . $urlPathSegment . '/' . $this->config['original_dir'] . '/' . $image['filename'];
             $image['metadata'] = $this->imageModel->getMetadata($id);
 
+            // EXIF extraction (on-demand, non-fatal)
+            $image['exif'] = null;
+            if (function_exists('exif_read_data')) {
+                // Only attempt for JPEG/JPG
+                $ext = strtolower(pathinfo($image['filename'], PATHINFO_EXTENSION));
+                if (in_array($ext, ['jpg','jpeg'])) {
+                    // Build filesystem path to original
+                    if (class_exists('Path')) {
+                        $baseFs = Path::uploadsBaseFs();
+                    } else {
+                        $projectRoot = dirname(dirname(__DIR__));
+                        $baseFs = $projectRoot . DIRECTORY_SEPARATOR . 'public' . DIRECTORY_SEPARATOR . ltrim($this->config['upload_dir'], '/');
+                    }
+                    $fsFolderSegment = $username . ($image['folder'] && $image['folder'] !== 'default' ? DIRECTORY_SEPARATOR . $image['folder'] : '');
+                    $originalFsPath = $baseFs . DIRECTORY_SEPARATOR . $fsFolderSegment . DIRECTORY_SEPARATOR . $this->config['original_dir'] . DIRECTORY_SEPARATOR . $image['filename'];
+                    if (is_readable($originalFsPath)) {
+                        try {
+                            $raw = @exif_read_data($originalFsPath, null, true, false);
+                            if ($raw && is_array($raw)) {
+                                $image['exif'] = $this->filterExif($raw);
+                            }
+                        } catch (Exception $ex) {
+                            // Ignore EXIF failures
+                        }
+                    }
+                }
+            }
+
             $this->response([
                 'success' => true,
                 'data' => $image
@@ -153,6 +181,39 @@ class ImageController {
 
             $image['thumbnail_url'] = $base . $uploadDir . '/' . $urlPathSegment . '/' . $this->config['thumb_dir'] . '/' . $image['filename'];
             $image['original_url'] = $base . $uploadDir . '/' . $urlPathSegment . '/' . $this->config['original_dir'] . '/' . $image['filename'];
+
+            // EXIF for shared images (subset, privacy: omit GPS)
+            $image['exif'] = null;
+            if (function_exists('exif_read_data')) {
+                $ext = strtolower(pathinfo($image['filename'], PATHINFO_EXTENSION));
+                if (in_array($ext, ['jpg','jpeg'])) {
+                    if (class_exists('Path')) {
+                        $baseFs = Path::uploadsBaseFs();
+                    } else {
+                        $projectRoot = dirname(dirname(__DIR__));
+                        $baseFs = $projectRoot . DIRECTORY_SEPARATOR . 'public' . DIRECTORY_SEPARATOR . ltrim($this->config['upload_dir'], '/');
+                    }
+                    $fsFolderSegment = $username . ($image['folder'] && $image['folder'] !== 'default' ? DIRECTORY_SEPARATOR . $image['folder'] : '');
+                    $originalFsPath = $baseFs . DIRECTORY_SEPARATOR . $fsFolderSegment . DIRECTORY_SEPARATOR . $this->config['original_dir'] . DIRECTORY_SEPARATOR . $image['filename'];
+                    if (is_readable($originalFsPath)) {
+                        try {
+                            $raw = @exif_read_data($originalFsPath, null, true, false);
+                            if ($raw && is_array($raw)) {
+                                $filtered = $this->filterExif($raw);
+                                if ($filtered) {
+                                    // Remove GPS keys for shared view
+                                    foreach (array_keys($filtered) as $k) {
+                                        if (stripos($k, 'gps') !== false) unset($filtered[$k]);
+                                    }
+                                    $image['exif'] = $filtered;
+                                }
+                            }
+                        } catch (Exception $ex) {
+                            // ignore
+                        }
+                    }
+                }
+            }
 
             $this->response([
                 'success' => true,
@@ -724,6 +785,35 @@ class ImageController {
             'success' => false,
             'error' => $message
         ], $statusCode);
+    }
+
+    /**
+     * Reduce raw EXIF array to a concise associative array of human-readable fields.
+     */
+    private function filterExif(array $raw) {
+        $out = [];
+        $get = function($section, $key) use ($raw) {
+            return isset($raw[$section][$key]) ? $raw[$section][$key] : null;
+        };
+        $assign = function($label, $value) use (&$out) {
+            if ($value !== null && $value !== '') $out[$label] = $value;
+        };
+        $assign('CameraMake', $get('IFD0','Make'));
+        $assign('CameraModel', $get('IFD0','Model'));
+        $assign('Software', $get('IFD0','Software'));
+        $assign('DateTimeOriginal', $get('EXIF','DateTimeOriginal') ?: $get('IFD0','DateTime'));
+        $assign('ExposureTime', $get('EXIF','ExposureTime'));
+        $assign('FNumber', $get('EXIF','FNumber'));
+        $assign('ISOSpeedRatings', $get('EXIF','ISOSpeedRatings'));
+        $assign('FocalLength', $get('EXIF','FocalLength'));
+        $assign('Orientation', $get('IFD0','Orientation'));
+        $assign('Flash', $get('EXIF','Flash'));
+        // GPS values (optional, may be removed for shared):
+        if (isset($raw['GPS'])) {
+            $assign('GPSLatitude', isset($raw['GPS']['GPSLatitude']) ? implode(',', $raw['GPS']['GPSLatitude']) : null);
+            $assign('GPSLongitude', isset($raw['GPS']['GPSLongitude']) ? implode(',', $raw['GPS']['GPSLongitude']) : null);
+        }
+        return $out ?: null;
     }
     
 }

@@ -1370,6 +1370,15 @@
                             <span class="label">Created:</span>
                             <span id="modalCreated"></span>
                         </div>
+                        <div class="info-item" id="exifToggleWrapper" style="display:none; margin-top:8px;">
+                            <button id="toggleExifBtn" class="btn btn-sm" style="background:#3949ab;color:#fff;">Show EXIF</button>
+                        </div>
+                        <div id="exifSection" style="display:none; margin-top:10px; max-height:220px; overflow:auto; border:1px solid #ddd; padding:8px; border-radius:4px; background:#fafafa;">
+                            <h4 style="margin:0 0 6px 0; font-size:14px;">EXIF Metadata</h4>
+                            <table id="exifTable" style="width:100%; border-collapse:collapse; font-size:12px;">
+                                <tbody></tbody>
+                            </table>
+                        </div>
                     </div>
 
                     <div class="modal-share-section">

@@ -347,7 +347,7 @@ Icon Note: Add real PNG icons (`icon-192.png`, `icon-512.png`, `icon-512-maskabl
 - [x] OAuth 2.0 social login (Google, Facebook, GitHub, Microsoft)
 - [x] Two-factor authentication (2FA)
 - [x] Batch image operations
-- [ ] Image metadata (EXIF) display
+- [x] Image metadata (EXIF) display
 - [ ] Advanced filters (blur, sepia, vignette)
 - [x] Drag-and-drop upload
 - [x] Progressive Web App (PWA)

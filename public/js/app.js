@@ -329,6 +329,47 @@ async function openImageModal(imageId) {
             }
 
             document.getElementById('imageModal').classList.add('active');
+
+            // EXIF display logic
+            const exifWrapper = document.getElementById('exifToggleWrapper');
+            const exifSection = document.getElementById('exifSection');
+            const exifTableBody = document.querySelector('#exifTable tbody');
+            const toggleExifBtn = document.getElementById('toggleExifBtn');
+            exifSection.style.display = 'none';
+            toggleExifBtn.textContent = 'Show EXIF';
+            if (image.exif && typeof image.exif === 'object') {
+                exifWrapper.style.display = 'block';
+                exifTableBody.innerHTML = '';
+                Object.keys(image.exif).forEach(key => {
+                    const val = image.exif[key];
+                    const row = document.createElement('tr');
+                    const kCell = document.createElement('td');
+                    const vCell = document.createElement('td');
+                    kCell.textContent = key;
+                    vCell.textContent = val;
+                    kCell.style.fontWeight = '600';
+                    kCell.style.padding = '4px 6px';
+                    vCell.style.padding = '4px 6px';
+                    vCell.style.wordBreak = 'break-word';
+                    row.appendChild(kCell);
+                    row.appendChild(vCell);
+                    row.style.borderTop = '1px solid #eee';
+                    exifTableBody.appendChild(row);
+                });
+                toggleExifBtn.onclick = function(e){
+                    e.stopPropagation();
+                    if (exifSection.style.display === 'none') {
+                        exifSection.style.display = 'block';
+                        toggleExifBtn.textContent = 'Hide EXIF';
+                    } else {
+                        exifSection.style.display = 'none';
+                        toggleExifBtn.textContent = 'Show EXIF';
+                    }
+                };
+            } else {
+                exifWrapper.style.display = 'none';
+                exifTableBody.innerHTML = '';
+            }
         }
     } catch (error) {
         console.error('Error loading image:', error);

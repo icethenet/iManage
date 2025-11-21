@@ -227,6 +227,19 @@ class ImageManipulator {
     }
 
     /**
+     * Applies a Gaussian blur to the image. Radius approximates intensity by
+     * repeating the built-in blur filter multiple times. Radius clamped 1-10.
+     *
+     * @param int $radius Number of iterations (1-10)
+     */
+    public function blur(int $radius = 1): void {
+        $radius = max(1, min(10, $radius));
+        for ($i = 0; $i < $radius; $i++) {
+            imagefilter($this->image, IMG_FILTER_GAUSSIAN_BLUR);
+        }
+    }
+
+    /**
      * Applies a blur effect to the image.
      */
     public function sharpen(): void {
