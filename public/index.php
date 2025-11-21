@@ -1517,6 +1517,20 @@
         </div>
     </div>
 
+    <!-- Lightbox Modal -->
+    <div id="lightbox" class="lightbox">
+        <button class="lightbox-close" id="lightboxClose" aria-label="Close">&times;</button>
+        <button class="lightbox-prev" id="lightboxPrev" aria-label="Previous">&#10094;</button>
+        <button class="lightbox-next" id="lightboxNext" aria-label="Next">&#10095;</button>
+        <div class="lightbox-content">
+            <img id="lightboxImage" src="" alt="Lightbox Image">
+            <div class="lightbox-caption">
+                <h3 id="lightboxTitle"></h3>
+                <p id="lightboxDetails"></p>
+            </div>
+        </div>
+    </div>
+
     <!-- Loading Spinner -->
     <div id="loadingSpinner" class="spinner">
         <div class="spinner-inner"></div>
@@ -1524,6 +1538,7 @@
 
     <script src="js/i18n.js"></script>
     <script src="js/app.js"></script>
+    <script src="js/lightbox.js"></script>
     <script src="js/crop-tool.js"></script>
     <script src="js/gallery.js"></script>
     <script src="js/editor.js?v=<?php echo time(); ?>"></script>
