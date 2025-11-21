@@ -507,6 +507,19 @@ function handleImageUpload(e) {
     showLoading(true);
 
     const formData = new FormData(document.getElementById('uploadForm'));
+
+    // Offline handling: queue uploads if offline
+    if (!navigator.onLine && window.offlineUploadQueue) {
+        window.offlineUploadQueue.queueFormData(formData);
+        const statusDiv = document.getElementById('uploadStatus');
+        statusDiv.className = 'upload-status info';
+        statusDiv.textContent = 'Offline: upload queued and will sync when online.';
+        statusDiv.style.display = 'block';
+        document.getElementById('uploadForm').reset();
+        document.querySelector('.file-name').textContent = 'No file selected';
+        showLoading(false);
+        return;
+    }
     
     fetch(`${API_BASE}?action=upload`, {
         method: 'POST',

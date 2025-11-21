@@ -1,4 +1,4 @@
-const VERSION = 'v2';
+const VERSION = 'v3';
 const CORE_CACHE = `imanage-core-${VERSION}`;
 const IMAGE_CACHE = `imanage-images-${VERSION}`;
 const API_CACHE = `imanage-api-${VERSION}`;
@@ -95,5 +95,52 @@ function enforceLimit(cache, max) {
       const toDelete = keys.slice(0, keys.length - max);
       toDelete.forEach(k => cache.delete(k));
     }
+  });
+}
+
+// Background Sync for queued uploads
+self.addEventListener('sync', event => {
+  if (event.tag === 'upload-queue') {
+    event.waitUntil(processUploadQueue());
+  }
+});
+
+async function processUploadQueue() {
+  const db = await openUploadDB();
+  const tx = db.transaction('uploadQueue', 'readonly');
+  const store = tx.objectStore('uploadQueue');
+  const items = await new Promise(res => { const r = store.getAll(); r.onsuccess=()=>res(r.result||[]); r.onerror=()=>res([]); });
+  if (!items.length) return;
+  for (const item of items) {
+    const fd = new FormData();
+    fd.append('image', item.fileBlob, item.fileName);
+    fd.append('folder', item.folder);
+    try {
+      const resp = await fetch('./api.php?action=upload', { method: 'POST', body: fd });
+      const data = await resp.json();
+      if (data && data.success) {
+        const delTx = db.transaction('uploadQueue', 'readwrite');
+        delTx.objectStore('uploadQueue').delete(item.id);
+      }
+    } catch(e) {
+      // Keep for retry
+    }
+  }
+  // Notify clients to refresh
+  const clientsArr = await self.clients.matchAll({ includeUncontrolled: true });
+  clientsArr.forEach(c => c.postMessage({ type: 'uploadQueueProcessed' }));
+}
+
+function openUploadDB() {
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open('imanage-offline', 1);
+    req.onupgradeneeded = () => {
+      const db = req.result;
+      if (!db.objectStoreNames.contains('uploadQueue')) {
+        db.createObjectStore('uploadQueue', { keyPath: 'id', autoIncrement: true });
+      }
+    };
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
   });
 }

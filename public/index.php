@@ -8,6 +8,7 @@
     <meta name="theme-color" content="#1e88e5">
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="css/gallery.css">
+    <script defer src="js/offline.js"></script>
 </head>
 <body>
     <div class="container">
