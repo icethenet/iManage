@@ -9,12 +9,6 @@
     <link rel="icon" type="image/png" href="img/icons/icon-192.png">
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="css/gallery.css">
-    <script defer src="js/i18n.js"></script>
-    <script defer src="js/app.js"></script>
-    <script defer src="js/auth.js"></script>
-    <script defer src="js/admin.js"></script>
-    <script defer src="js/offline.js"></script>
-    <script defer src="js/upload.js"></script>
 </head>
 <body>
     <div class="container">
@@ -1525,6 +1519,7 @@
         <div class="spinner-inner"></div>
     </div>
 
+    <script src="js/i18n.js"></script>
     <script src="js/app.js"></script>
     <script src="js/crop-tool.js"></script>
     <script src="js/gallery.js"></script>
