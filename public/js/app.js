@@ -9,6 +9,18 @@ let currentImageId = null;
 
 // Initialize app
 document.addEventListener('DOMContentLoaded', function() {
+    // Wait for i18n to be ready
+    if (typeof i18n !== 'undefined' && i18n.getCurrentLanguage()) {
+        initializeApp();
+    } else {
+        document.addEventListener('i18nReady', initializeApp);
+    }
+});
+
+function initializeApp() {
+    // Update all text on page with translations
+    i18n.updatePageText();
+    
     setupEventListeners();
     loadFolders();
     loadImages();
@@ -30,6 +42,27 @@ function setupEventListeners() {
             switchView(this.dataset.view);
         });
     });
+
+    // Language selector
+    const languageSelect = document.getElementById('languageSelect');
+    if (languageSelect) {
+        // Set current language on load
+        languageSelect.value = i18n.getCurrentLanguage();
+        
+        // Handle language change
+        languageSelect.addEventListener('change', async function(e) {
+            const language = this.value;
+            await i18n.setLanguage(language);
+            // Reload the page to fully apply language changes
+            window.location.reload();
+        });
+        
+        // Listen for i18n changes from other tabs/windows
+        document.addEventListener('i18nChanged', function() {
+            languageSelect.value = i18n.getCurrentLanguage();
+            i18n.updatePageText();
+        });
+    }
 
     // Gallery controls
     document.getElementById('folderSelect').addEventListener('change', function() {

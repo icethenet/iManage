@@ -53,6 +53,9 @@ if (PHP_VERSION_ID >= 70300) {
 // Start session
 session_start();
 
+// Initialize i18n (multi-language support)
+I18n::init();
+
 // Set security headers AFTER session (prevents XSS, MIME sniffing, clickjacking)
 header('X-Content-Type-Options: nosniff');
 header('X-Frame-Options: SAMEORIGIN');
@@ -418,6 +421,60 @@ try {
             $controller = new FolderController();
             $controller->delete($name);
             break;
+
+        // Language/i18n endpoints
+        case 'get_translations':
+            I18n::init();
+            $lang = $_GET['lang'] ?? I18n::getCurrentLanguage();
+            header('Content-Type: application/json');
+            echo I18n::getJSON($lang);
+            exit;
+
+        case 'set_language':
+            I18n::init();
+            $lang = $_POST['language'] ?? $_GET['language'] ?? null;
+            if ($lang) {
+                I18n::setLanguage($lang);
+                header('Content-Type: application/json');
+                echo json_encode([
+                    'success' => true,
+                    'language' => I18n::getCurrentLanguage()
+                ]);
+            } else {
+                http_response_code(400);
+                header('Content-Type: application/json');
+                echo json_encode([
+                    'success' => false,
+                    'error' => 'Language parameter required'
+                ]);
+            }
+            exit;
+
+        case 'get_supported_languages':
+            header('Content-Type: application/json');
+            $languages = I18n::getSupportedLanguages();
+            $data = [];
+            foreach ($languages as $code) {
+                $data[] = [
+                    'code' => $code,
+                    'name' => I18n::getLanguageName($code)
+                ];
+            }
+            echo json_encode([
+                'success' => true,
+                'data' => $data
+            ]);
+            exit;
+
+        case 'get_current_language':
+            I18n::init();
+            header('Content-Type: application/json');
+            echo json_encode([
+                'success' => true,
+                'language' => I18n::getCurrentLanguage(),
+                'name' => I18n::getLanguageName(I18n::getCurrentLanguage())
+            ]);
+            exit;
 
         default:
             http_response_code(400);

@@ -3,12 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Image Management System</title>
+    <title data-i18n="app_title">Image Management System</title>
     <link rel="manifest" href="/manifest.json">
     <meta name="theme-color" content="#1e88e5">
     <link rel="icon" type="image/png" href="img/icons/icon-192.png">
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="css/gallery.css">
+    <script defer src="js/i18n.js"></script>
     <script defer src="js/offline.js"></script>
     <script defer src="js/upload.js"></script>
 </head>
@@ -16,30 +17,37 @@
     <div class="container">
         <!-- Header -->
         <header class="header">
-            <h1>Image Management System</h1>
-            <p>Upload, organize, and manipulate your images</p>
+            <h1 data-i18n="app_title">Image Management System</h1>
+            <p data-i18n="app_subtitle">Upload, organize, and manipulate your images</p>
         </header>
 
         <!-- Navigation -->
         <nav class="nav">
             <div class="nav-left user-is-logged-in">
-                <a href="#" class="nav-link active" data-view="gallery">Gallery</a>
-                <a href="#" class="nav-link" data-view="upload">Upload</a>
-                <a href="#" class="nav-link" data-view="folders">Folders</a>
-                <a href="#" class="nav-link user-only" data-view="settings">Settings</a>
-                <a href="#" class="nav-link admin-only" data-view="admin" style="display: none;">Admin</a>
+                <a href="#" class="nav-link active" data-view="gallery" data-i18n="nav_gallery">Gallery</a>
+                <a href="#" class="nav-link" data-view="upload" data-i18n="nav_upload">Upload</a>
+                <a href="#" class="nav-link" data-view="folders" data-i18n="nav_folders">Folders</a>
+                <a href="#" class="nav-link user-only" data-view="settings" data-i18n="nav_settings">Settings</a>
+                <a href="#" class="nav-link admin-only" data-view="admin" style="display: none;" data-i18n="nav_admin">Admin</a>
             </div>
             <div class="nav-left user-is-logged-out">
-                <a href="#" class="nav-link active" data-view="gallery">Gallery</a>
-                <a href="#" class="nav-link" data-view="login">Login</a>
-                <a href="#" class="nav-link" data-view="register">Register</a>
+                <a href="#" class="nav-link active" data-view="gallery" data-i18n="nav_gallery">Gallery</a>
+                <a href="#" class="nav-link" data-view="login" data-i18n="nav_login">Login</a>
+                <a href="#" class="nav-link" data-view="register" data-i18n="nav_register">Register</a>
             </div>
             <div class="nav-right user-is-logged-in">
                 <span class="username-display" id="username-display"></span>
-                <a href="#" id="logout-link" class="nav-link">Logout</a>
+                <a href="#" id="logout-link" class="nav-link" data-i18n="nav_logout">Logout</a>
             </div>
-            <div class="nav-right">
-                <input type="text" id="searchInput" placeholder="Search images..." class="search-input">
+            <div class="nav-right" style="display: flex; align-items: center; gap: 15px;">
+                <input type="text" id="searchInput" placeholder="Search images..." class="search-input" data-i18n="nav_search">
+                <select id="languageSelect" class="language-select" title="Select Language" aria-label="Select Language">
+                    <option value="en">English</option>
+                    <option value="es">Español</option>
+                    <option value="fr">Français</option>
+                    <option value="de">Deutsch</option>
+                    <option value="zh">简体中文</option>
+                </select>
             </div>
         </nav>
 
@@ -48,11 +56,11 @@
             <!-- Gallery View -->
             <section id="gallery-view" class="view active">
                 <div class="gallery-header">
-                    <h2>Image Gallery</h2>
+                    <h2 data-i18n="gallery_title">Image Gallery</h2>
                     <div class="folder-filter">
-                        <label for="folderSelect">Folder:</label>
+                        <label for="folderSelect" data-i18n="gallery_folder_label">Folder:</label>
                         <select id="folderSelect">
-                            <option value="">All Folders</option>
+                            <option value="" data-i18n="gallery_all_folders">All Folders</option>
                         </select>
                     </div>
                 </div>

@@ -16,6 +16,7 @@ A powerful, mobile-first image management system with advanced editing capabilit
 - 🎬 **Video Support** - Upload videos with automatic thumbnail generation (requires FFmpeg)
 - 📱 **Mobile-First Design** - Optimized for all devices (320px to desktop)
 - 🔐 **User Authentication** - Secure login with session management
+- 🌐 **Multi-Language Support** - English, Spanish, French, German, Simplified Chinese
 - 🔑 **OAuth 2.0 Social Login** - Sign in with Google, Facebook, GitHub, or Microsoft
 
 ### Image Editing Tools
@@ -162,6 +163,7 @@ Recent additions include share token support and OAuth tables (see `database/mig
 - **Share Link Feature** (`docs/SHARE_LINK_FEATURE.md`) - Public sharing system
 - **Crop Tool Guide** (`docs/CROP_TOOL_QUICKSTART.md`) - Cropping walkthrough
 - **Video Support** (`docs/VIDEO_SUPPORT.md`) - Video upload and thumbnail generation
+- **Multi-Language Support** (`docs/MULTI_LANGUAGE_SUPPORT.md`) - i18n guide and language management
 - **Security Overview** (`docs/SECURITY_HARDENING_SUMMARY.md`) - Hardening summary
 - **OAuth Setup Guide** (`docs/OAUTH_SETUP.md`) - Provider configuration
 
@@ -380,7 +382,7 @@ Icon Note: Add real PNG icons (`icon-192.png`, `icon-512.png`, `icon-512-maskabl
 - [x] Drag-and-drop upload
 - [x] Progressive Web App (PWA)
 - [x] Video thumbnail support
-- [ ] Multi-language support
+- [x] Multi-language support
 
 ---
 
