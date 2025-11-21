@@ -18,8 +18,7 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 function initializeApp() {
-    // Update all text on page with translations
-    i18n.updatePageText();
+    // No need to call updatePageText() here - i18n.init() already did it
     
     setupEventListeners();
     loadFolders();

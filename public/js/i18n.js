@@ -34,6 +34,9 @@ class I18n {
         // Update HTML lang attribute
         document.documentElement.lang = this.currentLanguage;
         
+        // Update page text immediately after loading translations
+        this.updatePageText();
+        
         // Trigger custom event
         document.dispatchEvent(new CustomEvent('i18nReady', {
             detail: { language: this.currentLanguage }
