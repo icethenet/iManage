@@ -32,11 +32,7 @@
                 <a href="#" class="nav-link" data-view="login" data-i18n="nav_login">Login</a>
                 <a href="#" class="nav-link" data-view="register" data-i18n="nav_register">Register</a>
             </div>
-            <div class="nav-right user-is-logged-in">
-                <span class="username-display" id="username-display"></span>
-                <a href="#" id="logout-link" class="nav-link" data-i18n="nav_logout">Logout</a>
-            </div>
-            <div class="nav-right" style="display: flex; align-items: center; gap: 15px;">
+            <div class="nav-right">
                 <input type="text" id="searchInput" placeholder="Search images..." class="search-input" data-i18n="nav_search">
                 <select id="languageSelect" class="language-select" title="Select Language" aria-label="Select Language">
                     <option value="en">English</option>
@@ -45,6 +41,8 @@
                     <option value="de">Deutsch</option>
                     <option value="zh">简体中文</option>
                 </select>
+                <span class="username-display user-is-logged-in" id="username-display"></span>
+                <a href="#" id="logout-link" class="nav-link user-is-logged-in" data-i18n="nav_logout">Logout</a>
             </div>
         </nav>
 
