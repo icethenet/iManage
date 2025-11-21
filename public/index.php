@@ -1536,13 +1536,13 @@
         <div class="spinner-inner"></div>
     </div>
 
-    <script src="js/i18n.js"></script>
-    <script src="js/app.js"></script>
-    <script src="js/lightbox.js"></script>
-    <script src="js/crop-tool.js"></script>
-    <script src="js/gallery.js"></script>
+    <script src="js/i18n.js?v=<?php echo time(); ?>"></script>
+    <script src="js/app.js?v=<?php echo time(); ?>"></script>
+    <script src="js/lightbox.js?v=<?php echo time(); ?>"></script>
+    <script src="js/crop-tool.js?v=<?php echo time(); ?>"></script>
+    <script src="js/gallery.js?v=<?php echo time(); ?>"></script>
     <script src="js/editor.js?v=<?php echo time(); ?>"></script>
-    <script src="js/auth.js"></script>
+    <script src="js/auth.js?v=<?php echo time(); ?>"></script>
 
     <script>
         /**
