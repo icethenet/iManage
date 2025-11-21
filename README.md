@@ -307,15 +307,48 @@ For issues, questions, or suggestions:
 - Check the [documentation](docs/)
 - Review [security guidelines](docs/SECURITY_HARDENING_SUMMARY.md)
 
+## 📱 Progressive Web App (PWA)
+
+The app now includes baseline PWA support for installability and limited offline access.
+
+Implemented:
+- Web App Manifest (`public/manifest.json`)
+- Service Worker (`public/service-worker.js`) with precache + runtime image caching
+- Offline fallback page (`public/offline.html`)
+- Theme color + manifest link in `index.php`
+- Automatic registration in `public/js/app.js`
+
+What Works Offline:
+- Previously visited UI shell (HTML/CSS/JS)
+- Cached images already viewed
+- Offline page display when navigating without connectivity
+
+Requires Online:
+- Authentication, uploads, image manipulation (server-side GD), new API queries
+
+How to Install:
+1. Serve over HTTPS (localhost exempt).
+2. Visit the site in Chrome/Edge/Firefox (Android) or Chrome (Desktop).
+3. Use browser "Install App" prompt or three-dot menu > Install.
+
+Next Enhancement Ideas:
+- Add IndexedDB cache for recent image metadata
+- Background Sync for queued uploads
+- Versioned cache purge strategy
+- Workbox integration for easier runtime strategies
+- Push notifications for completed remote operations (optional)
+
+Icon Note: Add real PNG icons (`icon-192.png`, `icon-512.png`, `icon-512-maskable.png`) to `public/img/icons/` (placeholder README provided).
+
 ## 🗺️ Roadmap
 
 - [x] OAuth 2.0 social login (Google, Facebook, GitHub, Microsoft)
 - [x] Two-factor authentication (2FA)
-- [ ] Batch image operations
+- [x] Batch image operations
 - [ ] Image metadata (EXIF) display
 - [ ] Advanced filters (blur, sepia, vignette)
-- [ ] Drag-and-drop upload
-- [ ] Progressive Web App (PWA)
+- [x] Drag-and-drop upload
+- [x] Progressive Web App (PWA)
 - [ ] Video thumbnail support
 - [ ] Multi-language support
 
