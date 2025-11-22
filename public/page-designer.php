@@ -1178,88 +1178,75 @@ $pageId = $_GET['id'] ?? null;
                                 '.imanage-gallery-masonry img { width: 100%; margin-bottom: 20px; border-radius: 8px; break-inside: avoid; display: block; }' +
                                 '@media (max-width: 768px) { .imanage-gallery-masonry { column-count: 2; } }' +
                                 '@media (max-width: 480px) { .imanage-gallery-masonry { column-count: 1; } }' +
-                                '.imanage-gallery-slider { position: relative; max-width: 800px; margin: 40px auto; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); background: #fff; overflow: hidden; }' +
-                                '.imanage-gallery-slider .slider-main-image { position: relative; width: 100%; height: 400px; background: #000; display: flex; align-items: center; justify-content: center; }' +
-                                '.imanage-gallery-slider .slider-main-image img { max-width: 100%; max-height: 100%; object-fit: contain; }' +
-                                '.imanage-gallery-slider .slider-thumbnails { display: flex; gap: 10px; padding: 15px; overflow-x: auto; background: #f5f5f5; justify-content: center; flex-wrap: wrap; }' +
-                                '.imanage-gallery-slider .slider-thumbnails img { width: 80px; height: 80px; object-fit: cover; cursor: pointer; border-radius: 4px; border: 3px solid transparent; transition: all 0.3s; }' +
-                                '.imanage-gallery-slider .slider-thumbnails img:hover { opacity: 0.7; transform: scale(1.05); }' +
-                                '.imanage-gallery-slider .slider-btn { position: absolute; top: 50%; transform: translateY(-50%); z-index: 10; background: rgba(0,0,0,0.5); color: white; border: none; padding: 10px 15px; font-size: 24px; cursor: pointer; border-radius: 4px; transition: background 0.3s; }' +
+                                '.imanage-gallery-slider { position: relative; max-width: 800px; margin: 40px auto; overflow: hidden; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); background: #000; }' +
+                                '.imanage-gallery-slider .slider-wrapper { position: relative; width: 100%; height: 500px; background: #000; }' +
+                                '.imanage-gallery-slider .slider-slide { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; opacity: 0; transition: opacity 0.5s ease-in-out; }' +
+                                '.imanage-gallery-slider .slider-slide img { max-width: 100%; max-height: 100%; object-fit: contain; }' +
+                                '.imanage-gallery-slider .slider-btn { position: absolute; top: 50%; transform: translateY(-50%); z-index: 10; background: rgba(0,0,0,0.5); color: white; border: none; padding: 15px 20px; font-size: 24px; cursor: pointer; border-radius: 4px; transition: background 0.3s; }' +
                                 '.imanage-gallery-slider .slider-btn:hover { background: rgba(0,0,0,0.8); }' +
-                                '.imanage-gallery-slider .slider-prev { left: 10px; }' +
-                                '.imanage-gallery-slider .slider-next { right: 10px; }' +
-                                '.imanage-gallery-slider .slider-counter { position: absolute; top: 10px; right: 10px; z-index: 10; background: rgba(0,0,0,0.7); color: white; padding: 6px 12px; border-radius: 12px; font-size: 12px; }' +
+                                '.imanage-gallery-slider .slider-prev { left: 20px; }' +
+                                '.imanage-gallery-slider .slider-next { right: 20px; }' +
+                                '.imanage-gallery-slider .slider-counter { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); z-index: 10; background: rgba(0,0,0,0.7); color: white; padding: 8px 16px; border-radius: 20px; font-size: 14px; }' +
                             '`;' +
                             'document.head.appendChild(style);' +
                             'console.log(\'✅ Gallery styles injected\');' +
                         '}' +
                         'function initSlider(container, images) {' +
                             'let currentSlide = 0;' +
-                            'const mainImageWrapper = document.createElement(\'div\');' +
-                            'mainImageWrapper.className = \'slider-main-image\';' +
-                            'mainImageWrapper.style.cssText = \'position: relative; width: 100%; height: 400px; background: #000; display: flex; align-items: center; justify-content: center; overflow: hidden;\';' +
-                            'const mainImg = document.createElement(\'img\');' +
-                            'mainImg.src = images[0].src;' +
-                            'mainImg.alt = images[0].name;' +
-                            'mainImg.style.cssText = \'max-width: 100%; max-height: 100%; object-fit: contain; cursor: pointer;\';' +
-                            'mainImg.onclick = function() { openLightbox(images, currentSlide); };' +
-                            'mainImageWrapper.appendChild(mainImg);' +
-                            'const thumbnailWrapper = document.createElement(\'div\');' +
-                            'thumbnailWrapper.className = \'slider-thumbnails\';' +
-                            'thumbnailWrapper.style.cssText = \'display: flex; gap: 10px; padding: 15px; overflow-x: auto; background: #f5f5f5; justify-content: center;\';' +
+                            'const slidesWrapper = document.createElement(\'div\');' +
+                            'slidesWrapper.className = \'slider-wrapper\';' +
+                            'slidesWrapper.style.cssText = \'position: relative; width: 100%; height: 500px; background: #000;\';' +
                             'images.forEach((asset, idx) => {' +
-                                'const thumb = document.createElement(\'img\');' +
-                                'thumb.src = asset.src;' +
-                                'thumb.alt = asset.name;' +
-                                'thumb.style.cssText = \'width: 80px; height: 80px; object-fit: cover; cursor: pointer; border-radius: 4px; border: 3px solid \' + (idx === 0 ? \'#667eea\' : \'transparent\') + \'; transition: all 0.3s;\';' +
-                                'thumb.onmouseover = function() { if (idx !== currentSlide) this.style.opacity = \'0.7\'; };' +
-                                'thumb.onmouseout = function() { this.style.opacity = \'1\'; };' +
-                                'thumb.onclick = function() {' +
-                                    'currentSlide = idx;' +
-                                    'mainImg.src = asset.src;' +
-                                    'mainImg.alt = asset.name;' +
-                                    'thumbnailWrapper.querySelectorAll(\'img\').forEach((t, i) => {' +
-                                        't.style.border = \'3px solid \' + (i === idx ? \'#667eea\' : \'transparent\');' +
-                                    '});' +
-                                    'counter.textContent = (idx + 1) + \' / \' + images.length;' +
-                                '};' +
-                                'thumbnailWrapper.appendChild(thumb);' +
+                                'const slide = document.createElement(\'div\');' +
+                                'slide.className = \'slider-slide\';' +
+                                'slide.style.cssText = \'position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; opacity: \' + (idx === 0 ? \'1\' : \'0\') + \'; transition: opacity 0.5s ease-in-out; pointer-events: \' + (idx === 0 ? \'auto\' : \'none\') + \';\';' +
+                                'const img = document.createElement(\'img\');' +
+                                'img.src = asset.src;' +
+                                'img.alt = asset.name;' +
+                                'img.style.cssText = \'max-width: 100%; max-height: 100%; object-fit: contain; cursor: pointer;\';' +
+                                'img.onclick = function() { openLightbox(images, currentSlide); };' +
+                                'slide.appendChild(img);' +
+                                'slidesWrapper.appendChild(slide);' +
                             '});' +
                             'const prevBtn = document.createElement(\'button\');' +
                             'prevBtn.innerHTML = \'❮\';' +
                             'prevBtn.className = \'slider-btn slider-prev\';' +
-                            'prevBtn.style.cssText = \'position: absolute; top: 50%; left: 10px; transform: translateY(-50%); z-index: 10; background: rgba(0,0,0,0.5); color: white; border: none; padding: 10px 15px; font-size: 24px; cursor: pointer; border-radius: 4px;\';' +
+                            'prevBtn.style.cssText = \'position: absolute; top: 50%; left: 20px; transform: translateY(-50%); z-index: 10; background: rgba(0,0,0,0.5); color: white; border: none; padding: 15px 20px; font-size: 24px; cursor: pointer; border-radius: 4px;\';' +
                             'prevBtn.onmouseover = function() { this.style.background = \'rgba(0,0,0,0.8)\'; };' +
                             'prevBtn.onmouseout = function() { this.style.background = \'rgba(0,0,0,0.5)\'; };' +
                             'const nextBtn = document.createElement(\'button\');' +
                             'nextBtn.innerHTML = \'❯\';' +
                             'nextBtn.className = \'slider-btn slider-next\';' +
-                            'nextBtn.style.cssText = \'position: absolute; top: 50%; right: 10px; transform: translateY(-50%); z-index: 10; background: rgba(0,0,0,0.5); color: white; border: none; padding: 10px 15px; font-size: 24px; cursor: pointer; border-radius: 4px;\';' +
+                            'nextBtn.style.cssText = \'position: absolute; top: 50%; right: 20px; transform: translateY(-50%); z-index: 10; background: rgba(0,0,0,0.5); color: white; border: none; padding: 15px 20px; font-size: 24px; cursor: pointer; border-radius: 4px;\';' +
                             'nextBtn.onmouseover = function() { this.style.background = \'rgba(0,0,0,0.8)\'; };' +
                             'nextBtn.onmouseout = function() { this.style.background = \'rgba(0,0,0,0.5)\'; };' +
                             'const counter = document.createElement(\'div\');' +
                             'counter.className = \'slider-counter\';' +
-                            'counter.style.cssText = \'position: absolute; top: 10px; right: 10px; z-index: 10; background: rgba(0,0,0,0.7); color: white; padding: 6px 12px; border-radius: 12px; font-size: 12px;\';' +
+                            'counter.style.cssText = \'position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); z-index: 10; background: rgba(0,0,0,0.7); color: white; padding: 8px 16px; border-radius: 20px; font-size: 14px;\';' +
                             'counter.textContent = \'1 / \' + images.length;' +
                             'function showSlide(index) {' +
                                 'if (index < 0) index = images.length - 1;' +
                                 'if (index >= images.length) index = 0;' +
-                                'currentSlide = index;' +
-                                'mainImg.src = images[index].src;' +
-                                'mainImg.alt = images[index].name;' +
-                                'counter.textContent = (index + 1) + \' / \' + images.length;' +
-                                'thumbnailWrapper.querySelectorAll(\'img\').forEach((t, i) => {' +
-                                    't.style.border = \'3px solid \' + (i === index ? \'#667eea\' : \'transparent\');' +
+                                'const slides = slidesWrapper.querySelectorAll(\'.slider-slide\');' +
+                                'slides.forEach((slide, i) => {' +
+                                    'if (i === index) {' +
+                                        'slide.style.opacity = \'1\';' +
+                                        'slide.style.pointerEvents = \'auto\';' +
+                                    '} else {' +
+                                        'slide.style.opacity = \'0\';' +
+                                        'slide.style.pointerEvents = \'none\';' +
+                                    '}' +
                                 '});' +
+                                'counter.textContent = (index + 1) + \' / \' + images.length;' +
+                                'currentSlide = index;' +
                             '}' +
                             'prevBtn.onclick = function() { showSlide(currentSlide - 1); };' +
                             'nextBtn.onclick = function() { showSlide(currentSlide + 1); };' +
-                            'mainImageWrapper.appendChild(prevBtn);' +
-                            'mainImageWrapper.appendChild(nextBtn);' +
-                            'mainImageWrapper.appendChild(counter);' +
-                            'container.appendChild(mainImageWrapper);' +
-                            'container.appendChild(thumbnailWrapper);' +
-                            'console.log(\'✅ Slider initialized with\', images.length, \'images\');' +
+                            'slidesWrapper.appendChild(prevBtn);' +
+                            'slidesWrapper.appendChild(nextBtn);' +
+                            'slidesWrapper.appendChild(counter);' +
+                            'container.appendChild(slidesWrapper);' +
+                            'console.log(\'✅ Slider initialized with\', images.length, \'slides\');' +
                         '}' +
                         'if (document.readyState === \'loading\') {' +
                             'document.addEventListener(\'DOMContentLoaded\', loadGalleries);' +
