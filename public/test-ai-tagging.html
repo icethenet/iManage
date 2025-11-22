@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Tagging Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 20px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+        }
+        .success { border-color: #28a745; background: #d4edda; }
+        .error { border-color: #dc3545; background: #f8d7da; }
+        .info { border-color: #17a2b8; background: #d1ecf1; }
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 4px;
+            margin: 5px;
+        }
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        #console-output {
+            background: #2d2d2d;
+            color: #00ff00;
+            padding: 15px;
+            font-family: monospace;
+            max-height: 300px;
+            overflow-y: auto;
+            border-radius: 4px;
+            margin-top: 10px;
+        }
+        #test-image {
+            max-width: 100%;
+            margin: 10px 0;
+            border: 2px solid #ddd;
+        }
+        .hidden { display: none; }
+    </style>
+    
+    <!-- TensorFlow.js for AI Features -->
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.11.0/dist/tf.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/mobilenet@2.1.0/dist/mobilenet.min.js"></script>
+</head>
+<body>
+    <h1>🤖 AI Tagging Diagnostic Test</h1>
+    
+    <div class="test-section info">
+        <h2>Step 1: Check Libraries</h2>
+        <button onclick="checkLibraries()">Check TensorFlow.js & MobileNet</button>
+        <div id="library-status"></div>
+    </div>
+    
+    <div class="test-section info">
+        <h2>Step 2: Load Model</h2>
+        <button onclick="loadModel()">Load MobileNet Model</button>
+        <div id="model-status"></div>
+    </div>
+    
+    <div class="test-section info">
+        <h2>Step 3: Test with Sample Image</h2>
+        <button onclick="testSampleImage()">Test with Built-in Sample</button>
+        <div id="sample-status"></div>
+        <img id="test-image" class="hidden">
+    </div>
+    
+    <div class="test-section info">
+        <h2>Step 4: Test with Your Image</h2>
+        <input type="file" id="file-input" accept="image/*">
+        <button onclick="testUploadedImage()">Test Uploaded Image</button>
+        <div id="upload-status"></div>
+        <img id="uploaded-image" class="hidden">
+    </div>
+    
+    <div class="test-section">
+        <h2>📊 Results</h2>
+        <div id="results"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>🖥️ Console Output</h2>
+        <div id="console-output"></div>
+    </div>
+    
+    <script>
+        let model = null;
+        const consoleDiv = document.getElementById('console-output');
+        
+        // Override console.log to capture output
+        const originalLog = console.log;
+        const originalError = console.error;
+        console.log = function(...args) {
+            originalLog.apply(console, args);
+            logToDiv('LOG: ' + args.join(' '));
+        };
+        console.error = function(...args) {
+            originalError.apply(console, args);
+            logToDiv('ERROR: ' + args.join(' '), 'red');
+        };
+        
+        function logToDiv(message, color = '#00ff00') {
+            const line = document.createElement('div');
+            line.style.color = color;
+            line.textContent = new Date().toLocaleTimeString() + ' - ' + message;
+            consoleDiv.appendChild(line);
+            consoleDiv.scrollTop = consoleDiv.scrollHeight;
+        }
+        
+        function checkLibraries() {
+            const status = document.getElementById('library-status');
+            let html = '<ul>';
+            
+            if (typeof tf !== 'undefined') {
+                html += '<li>✅ TensorFlow.js loaded (v' + tf.version.tfjs + ')</li>';
+                html += '<li>Backend: ' + tf.getBackend() + '</li>';
+            } else {
+                html += '<li>❌ TensorFlow.js NOT loaded</li>';
+            }
+            
+            if (typeof mobilenet !== 'undefined') {
+                html += '<li>✅ MobileNet library loaded</li>';
+            } else {
+                html += '<li>❌ MobileNet library NOT loaded</li>';
+            }
+            
+            html += '</ul>';
+            status.innerHTML = html;
+            
+            const section = status.closest('.test-section');
+            if (typeof tf !== 'undefined' && typeof mobilenet !== 'undefined') {
+                section.className = 'test-section success';
+                console.log('✅ All libraries loaded successfully');
+            } else {
+                section.className = 'test-section error';
+                console.error('❌ Missing libraries');
+            }
+        }
+        
+        async function loadModel() {
+            const status = document.getElementById('model-status');
+            const section = status.closest('.test-section');
+            
+            try {
+                status.innerHTML = '<p>⏳ Loading model... (this may take 2-3 seconds)</p>';
+                console.log('🤖 Starting model load...');
+                
+                const startTime = Date.now();
+                model = await mobilenet.load();
+                const loadTime = ((Date.now() - startTime) / 1000).toFixed(2);
+                
+                status.innerHTML = '<p>✅ Model loaded successfully in ' + loadTime + ' seconds</p>';
+                section.className = 'test-section success';
+                console.log('✅ Model loaded:', model);
+            } catch (error) {
+                status.innerHTML = '<p>❌ Failed to load model: ' + error.message + '</p>';
+                section.className = 'test-section error';
+                console.error('❌ Model load error:', error);
+            }
+        }
+        
+        async function testSampleImage() {
+            const status = document.getElementById('sample-status');
+            const section = status.closest('.test-section');
+            const imgElement = document.getElementById('test-image');
+            
+            if (!model) {
+                alert('Please load the model first (Step 2)');
+                return;
+            }
+            
+            try {
+                status.innerHTML = '<p>⏳ Loading sample image...</p>';
+                
+                // Create a simple test image (colorful gradient)
+                const canvas = document.createElement('canvas');
+                canvas.width = 224;
+                canvas.height = 224;
+                const ctx = canvas.getContext('2d');
+                
+                // Draw something recognizable
+                const gradient = ctx.createLinearGradient(0, 0, 224, 224);
+                gradient.addColorStop(0, '#667eea');
+                gradient.addColorStop(1, '#764ba2');
+                ctx.fillStyle = gradient;
+                ctx.fillRect(0, 0, 224, 224);
+                
+                // Draw a circle (like a ball)
+                ctx.fillStyle = '#ff6b6b';
+                ctx.beginPath();
+                ctx.arc(112, 112, 50, 0, Math.PI * 2);
+                ctx.fill();
+                
+                imgElement.src = canvas.toDataURL();
+                imgElement.classList.remove('hidden');
+                
+                status.innerHTML = '<p>⏳ Classifying image...</p>';
+                console.log('🔍 Starting classification...');
+                
+                const predictions = await model.classify(canvas);
+                console.log('Raw predictions:', predictions);
+                
+                displayResults(predictions);
+                status.innerHTML = '<p>✅ Classification complete! See results below.</p>';
+                section.className = 'test-section success';
+                
+            } catch (error) {
+                status.innerHTML = '<p>❌ Test failed: ' + error.message + '</p>';
+                section.className = 'test-section error';
+                console.error('❌ Test error:', error);
+            }
+        }
+        
+        async function testUploadedImage() {
+            const fileInput = document.getElementById('file-input');
+            const status = document.getElementById('upload-status');
+            const section = status.closest('.test-section');
+            const imgElement = document.getElementById('uploaded-image');
+            
+            if (!model) {
+                alert('Please load the model first (Step 2)');
+                return;
+            }
+            
+            if (!fileInput.files || fileInput.files.length === 0) {
+                alert('Please select an image file first');
+                return;
+            }
+            
+            try {
+                const file = fileInput.files[0];
+                status.innerHTML = '<p>⏳ Loading your image...</p>';
+                console.log('📁 File:', file.name, file.type, file.size + ' bytes');
+                
+                // Create image element from file
+                const img = await createImageFromFile(file);
+                imgElement.src = img.src;
+                imgElement.classList.remove('hidden');
+                
+                status.innerHTML = '<p>⏳ Classifying your image...</p>';
+                console.log('🔍 Starting classification...');
+                
+                const predictions = await model.classify(img);
+                console.log('Raw predictions:', predictions);
+                
+                displayResults(predictions);
+                status.innerHTML = '<p>✅ Classification complete! See results below.</p>';
+                section.className = 'test-section success';
+                
+            } catch (error) {
+                status.innerHTML = '<p>❌ Test failed: ' + error.message + '</p>';
+                section.className = 'test-section error';
+                console.error('❌ Test error:', error);
+            }
+        }
+        
+        function createImageFromFile(file) {
+            return new Promise((resolve, reject) => {
+                const img = new Image();
+                img.onload = () => {
+                    URL.revokeObjectURL(img.src);
+                    resolve(img);
+                };
+                img.onerror = reject;
+                img.src = URL.createObjectURL(file);
+            });
+        }
+        
+        function displayResults(predictions) {
+            const resultsDiv = document.getElementById('results');
+            let html = '<h3>🏷️ Generated Tags:</h3><ul>';
+            
+            // Show all predictions
+            html += '<h4>All Predictions:</h4><ul>';
+            predictions.forEach(pred => {
+                const percent = (pred.probability * 100).toFixed(2);
+                const tag = pred.className.split(',')[0].trim().toLowerCase().replace(/_/g, ' ');
+                html += '<li><strong>' + tag + '</strong> (' + percent + '%)</li>';
+            });
+            html += '</ul>';
+            
+            // Show filtered tags (>5%)
+            const tags = predictions
+                .filter(pred => pred.probability > 0.05)
+                .slice(0, 5)
+                .map(pred => pred.className.split(',')[0].trim().toLowerCase().replace(/_/g, ' '));
+            
+            html += '<h4>Tags that would be used (>5% confidence):</h4>';
+            html += '<p style="font-size: 18px; font-weight: bold;">' + tags.join(', ') + '</p>';
+            
+            if (tags.length === 0) {
+                html += '<p style="color: red;">⚠️ No tags passed the 5% threshold!</p>';
+            }
+            
+            resultsDiv.innerHTML = html;
+        }
+        
+        // Auto-run library check on load
+        window.addEventListener('load', () => {
+            setTimeout(checkLibraries, 500);
+        });
+    </script>
+</body>
+</html>
+

@@ -311,7 +311,7 @@ async function uploadSingleFile(file, folder, bulkTitle, bulkDescription, bulkTa
     progressItem.innerHTML = `
         <div class="progress-item-header">
             <span class="progress-item-name">${file.name}</span>
-            <span class="progress-item-status">Uploading...</span>
+            <span class="progress-item-status">Preparing...</span>
         </div>
         <div class="progress-bar-container">
             <div class="progress-bar" style="width: 0%"></div>
@@ -323,6 +323,39 @@ async function uploadSingleFile(file, folder, bulkTitle, bulkDescription, bulkTa
     const statusSpan = progressItem.querySelector('.progress-item-status');
 
     try {
+        // Check if auto-tag is enabled
+        const autoTagEnabled = document.getElementById('autoTagUpload')?.checked;
+        let finalTags = bulkTags || '';
+        
+        // Generate AI tags if enabled and file is an image
+        if (autoTagEnabled && file.type.startsWith('image/') && window.AITagging) {
+            try {
+                statusSpan.textContent = '🤖 Generating AI tags...';
+                statusSpan.style.color = '#667eea';
+                progressBar.style.width = '25%';
+                progressBar.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
+                
+                const aiTags = await window.AITagging.autoTagOnUpload(file);
+                
+                if (aiTags) {
+                    // Merge AI tags with bulk tags
+                    const existingTags = bulkTags ? bulkTags.split(',').map(t => t.trim()) : [];
+                    const newTags = aiTags.split(',').map(t => t.trim());
+                    const allTags = [...new Set([...existingTags, ...newTags])]; // Remove duplicates
+                    finalTags = allTags.join(', ');
+                    
+                    console.log(`✅ AI tags for ${file.name}: ${aiTags}`);
+                }
+            } catch (error) {
+                console.warn('AI tagging failed for ' + file.name + ':', error);
+                // Continue with upload even if tagging fails
+            }
+        }
+        
+        statusSpan.textContent = 'Uploading...';
+        statusSpan.style.color = '';
+        progressBar.style.background = '';
+        
         // Create FormData
         const formData = new FormData();
         formData.append('image', file);  // Changed from 'images' to 'image' to match backend expectation
@@ -335,8 +368,8 @@ async function uploadSingleFile(file, folder, bulkTitle, bulkDescription, bulkTa
         // Use bulk description if provided
         formData.append('description', bulkDescription || '');
         
-        // Use bulk tags if provided
-        formData.append('tags', bulkTags || '');
+        // Use final tags (bulk + AI generated)
+        formData.append('tags', finalTags);
 
         // Upload with progress
         const response = await fetch(`${API_BASE}?action=upload`, {

@@ -400,7 +400,7 @@ try {
             break;
 
         case 'getmyimages':
-            // Get user's images for GrapesJS Asset Manager
+            // Get user's SHARED images for GrapesJS Asset Manager (page designer)
             requireLogin();
             
             try {
@@ -416,7 +416,7 @@ try {
                 $stmt = $db->prepare("
                     SELECT id, filename, original_name, file_size, width, height, created_at, folder
                     FROM images 
-                    WHERE user_id = ? 
+                    WHERE user_id = ? AND shared = 1
                     ORDER BY created_at DESC
                 ");
                 $stmt->execute([$userId]);
@@ -497,11 +497,11 @@ try {
                 $user = $userStmt->fetch(PDO::FETCH_ASSOC);
                 $username = $user ? $user['username'] : 'unknown';
                 
-                // Get user's images
+                // Get user's SHARED images only
                 $stmt = $db->prepare("
                     SELECT id, filename, original_name, file_size, width, height, created_at, folder
                     FROM images 
-                    WHERE user_id = ? 
+                    WHERE user_id = ? AND shared = 1
                     ORDER BY created_at DESC
                 ");
                 $stmt->execute([$userId]);

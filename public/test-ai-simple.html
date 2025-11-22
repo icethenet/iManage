@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Quick AI Test</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.11.0/dist/tf.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/mobilenet@2.1.0/dist/mobilenet.min.js"></script>
+    <style>
+        body { font-family: Arial; padding: 20px; max-width: 600px; margin: 0 auto; }
+        button { padding: 10px 20px; margin: 10px 0; cursor: pointer; background: #667eea; color: white; border: none; border-radius: 4px; }
+        #log { background: #f5f5f5; padding: 15px; margin-top: 20px; font-family: monospace; white-space: pre-wrap; max-height: 400px; overflow-y: auto; }
+        img { max-width: 100%; margin: 10px 0; border: 2px solid #ddd; }
+    </style>
+</head>
+<body>
+    <h1>🔬 Quick AI Test</h1>
+    
+    <button onclick="runTest()">▶️ RUN FULL TEST</button>
+    
+    <div id="log"></div>
+    <img id="testImg" style="display:none">
+    
+    <script>
+        const log = document.getElementById('log');
+        
+        function addLog(msg, color = 'black') {
+            const time = new Date().toLocaleTimeString();
+            log.innerHTML += `<span style="color:${color}">[${time}] ${msg}</span>\n`;
+            log.scrollTop = log.scrollHeight;
+        }
+        
+        async function runTest() {
+            log.innerHTML = '';
+            addLog('=== STARTING TEST ===', 'blue');
+            
+            try {
+                // Test 1: Check libraries
+                addLog('\n📚 Step 1: Checking libraries...');
+                if (typeof tf === 'undefined') {
+                    addLog('❌ TensorFlow.js NOT loaded!', 'red');
+                    return;
+                }
+                addLog('✅ TensorFlow.js loaded: v' + tf.version.tfjs, 'green');
+                
+                if (typeof mobilenet === 'undefined') {
+                    addLog('❌ MobileNet NOT loaded!', 'red');
+                    return;
+                }
+                addLog('✅ MobileNet library loaded', 'green');
+                
+                // Test 2: Load model
+                addLog('\n🤖 Step 2: Loading MobileNet model...');
+                const startLoad = Date.now();
+                const model = await mobilenet.load();
+                const loadTime = ((Date.now() - startLoad) / 1000).toFixed(2);
+                addLog(`✅ Model loaded in ${loadTime}s`, 'green');
+                addLog('Model info: ' + JSON.stringify(model.constructor.name));
+                
+                // Test 3: Create test image
+                addLog('\n🎨 Step 3: Creating test image...');
+                const canvas = document.createElement('canvas');
+                canvas.width = 224;
+                canvas.height = 224;
+                const ctx = canvas.getContext('2d');
+                
+                // Draw a red circle on blue background
+                ctx.fillStyle = '#4A90E2';
+                ctx.fillRect(0, 0, 224, 224);
+                ctx.fillStyle = '#E74C3C';
+                ctx.beginPath();
+                ctx.arc(112, 112, 60, 0, Math.PI * 2);
+                ctx.fill();
+                
+                const testImg = document.getElementById('testImg');
+                testImg.src = canvas.toDataURL();
+                testImg.style.display = 'block';
+                addLog('✅ Test image created', 'green');
+                
+                // Test 4: Classify
+                addLog('\n🔍 Step 4: Running classification...');
+                addLog('Calling model.classify()...');
+                
+                const predictions = await model.classify(canvas);
+                
+                addLog('✅ Classification complete!', 'green');
+                addLog(`Received ${predictions.length} predictions`);
+                
+                if (predictions.length === 0) {
+                    addLog('❌ ERROR: Predictions array is EMPTY!', 'red');
+                    addLog('This is the bug!', 'red');
+                    return;
+                }
+                
+                // Test 5: Show results
+                addLog('\n📊 Step 5: Results:');
+                predictions.forEach((pred, i) => {
+                    const percent = (pred.probability * 100).toFixed(2);
+                    const tag = pred.className.split(',')[0].trim();
+                    addLog(`  ${i+1}. ${tag} (${percent}%)`, 'blue');
+                });
+                
+                // Test 6: Filter like the real code
+                addLog('\n🏷️ Step 6: Filtering tags (>5% confidence):');
+                const tags = predictions
+                    .filter(pred => pred.probability > 0.05)
+                    .slice(0, 5)
+                    .map(pred => pred.className.split(',')[0].trim().toLowerCase().replace(/_/g, ' '));
+                
+                if (tags.length === 0) {
+                    addLog('❌ All tags filtered out!', 'red');
+                    addLog('Highest confidence was: ' + (predictions[0].probability * 100).toFixed(2) + '%', 'orange');
+                } else {
+                    addLog('✅ Final tags: ' + tags.join(', '), 'green');
+                }
+                
+                addLog('\n=== TEST COMPLETE ===', 'blue');
+                
+            } catch (error) {
+                addLog('\n❌ ERROR: ' + error.message, 'red');
+                addLog('Stack: ' + error.stack, 'red');
+            }
+        }
+        
+        // Auto-run on load
+        window.addEventListener('load', () => {
+            addLog('Page loaded. Click button to start test.\n');
+        });
+    </script>
+</body>
+</html>
+
