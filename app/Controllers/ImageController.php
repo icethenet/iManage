@@ -41,16 +41,18 @@ class ImageController {
             $folder = isset($_GET['folder']) ? preg_replace('/[^a-zA-Z0-9_\s-]/', '', $_GET['folder']) : null;
             // Sanitize search query
             $search = isset($_GET['search']) ? htmlspecialchars(trim($_GET['search']), ENT_QUOTES, 'UTF-8') : null;
+            // Sanitize file type filter
+            $fileType = isset($_GET['type']) && in_array($_GET['type'], ['image', 'video']) ? $_GET['type'] : null;
 
             if ($page < 1) $page = 1;
             
             if ($search) {
-                $images = $this->imageModel->search($search, $page, $limit, $userId);
+                $images = $this->imageModel->search($search, $page, $limit, $userId, $fileType);
             } else {
-                $images = $this->imageModel->getByFolder($folder, $page, $limit, $userId);
+                $images = $this->imageModel->getByFolder($folder, $page, $limit, $userId, $fileType);
             }
 
-            $total = $this->imageModel->getCount($folder, $userId);
+            $total = $this->imageModel->getCount($folder, $userId, $fileType);
             $totalPages = ceil($total / $limit);
 
             // Add thumbnail URLs (use current request host if app_url is not applicable)

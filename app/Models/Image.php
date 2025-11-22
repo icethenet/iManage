@@ -15,7 +15,7 @@ class Image {
     /**
      * Get all images with pagination
      */
-    public function getAll($page = 1, $limit = 12, $folder = null, $userId = null) {
+    public function getAll($page = 1, $limit = 12, $folder = null, $userId = null, $fileType = null) {
         $offset = ($page - 1) * $limit;
         $query = "SELECT * FROM {$this->table} WHERE 1=1";
         $params = [];
@@ -32,6 +32,12 @@ class Image {
         if ($folder) {
             $query .= " AND folder = ?";
             $params[] = $folder;
+        }
+
+        // Filter by file type (image, video, or null for all)
+        if ($fileType) {
+            $query .= " AND file_type = ?";
+            $params[] = $fileType;
         }
 
         $query .= " ORDER BY created_at DESC LIMIT ? OFFSET ?";
@@ -77,14 +83,14 @@ class Image {
     /**
      * Get images by folder
      */
-    public function getByFolder($folder, $page = 1, $limit = 12, $userId = null) {
-        return $this->getAll($page, $limit, $folder, $userId);
+    public function getByFolder($folder, $page = 1, $limit = 12, $userId = null, $fileType = null) {
+        return $this->getAll($page, $limit, $folder, $userId, $fileType);
     }
 
     /**
      * Search images
      */
-    public function search($query, $page = 1, $limit = 12, $userId = null) {
+    public function search($query, $page = 1, $limit = 12, $userId = null, $fileType = null) {
         $offset = ($page - 1) * $limit;
         $params = [];
         $searchQuery = "SELECT * FROM {$this->table} 
@@ -97,6 +103,12 @@ class Image {
         } else {
             // For public view, only search shared images
             $searchQuery .= " AND shared = 1";
+        }
+
+        // Filter by file type
+        if ($fileType) {
+            $searchQuery .= " AND file_type = ?";
+            $params[] = $fileType;
         }
 
         $searchQuery .= " ORDER BY created_at DESC 
@@ -113,7 +125,7 @@ class Image {
     /**
      * Get total count
      */
-    public function getCount($folder = null, $userId = null) {
+    public function getCount($folder = null, $userId = null, $fileType = null) {
         $query = "SELECT COUNT(*) as count FROM {$this->table} WHERE 1=1";
         $params = [];
 
@@ -128,6 +140,12 @@ class Image {
         if ($folder) {
             $query .= " AND folder = ?";
             $params[] = $folder;
+        }
+
+        // Filter by file type
+        if ($fileType) {
+            $query .= " AND file_type = ?";
+            $params[] = $fileType;
         }
 
         $stmt = $this->db->prepare($query);

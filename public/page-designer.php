@@ -171,6 +171,8 @@ $pageId = $_GET['id'] ?? null;
     <!-- GrapesJS Scripts -->
     <script src="https://unpkg.com/grapesjs"></script>
     <script src="https://unpkg.com/grapesjs-blocks-basic"></script>
+    <!-- HTML2Canvas for page screenshots -->
+    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
     
     <script>
         console.log('🚀 Script started');
@@ -818,12 +820,31 @@ $pageId = $_GET['id'] ?? null;
                     html += galleryScript + lightboxCSS;
                 }
                 
+                // Capture screenshot of the canvas
+                console.log('📸 Capturing page screenshot...');
+                let screenshotData = null;
+                try {
+                    const canvas = await html2canvas(editor.Canvas.getBody(), {
+                        backgroundColor: '#ffffff',
+                        scale: 0.5, // Reduce size for faster processing
+                        width: 1200,
+                        height: 800,
+                        logging: false
+                    });
+                    screenshotData = canvas.toDataURL('image/jpeg', 0.7);
+                    console.log('✅ Screenshot captured');
+                } catch (screenshotError) {
+                    console.warn('⚠️ Screenshot failed:', screenshotError);
+                    // Continue without screenshot
+                }
+                
                 const payload = {
                     id: pageId,
                     html_content: html,
                     css_content: css,
                     grapesjs_data: JSON.stringify(projectData),
-                    page_title: title
+                    page_title: title,
+                    preview_image: screenshotData
                 };
                 
                 console.log('🚀 Sending to API...');

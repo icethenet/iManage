@@ -319,6 +319,7 @@ try {
                 $css = $input['css_content'] ?? '';
                 $gjsData = $input['grapesjs_data'] ?? '';
                 $title = $input['page_title'] ?? 'Untitled Page';
+                $previewImageData = $input['preview_image'] ?? null;
                 $userId = $_SESSION['user_id'];
                 
                 error_log("Page ID: " . ($pageId ?? 'NEW'));
@@ -326,16 +327,50 @@ try {
                 error_log("User ID: " . $userId);
 
                 $db = Database::getInstance();
+                
+                // Save preview image if provided
+                $previewFilename = null;
+                if ($previewImageData && strpos($previewImageData, 'data:image') === 0) {
+                    try {
+                        // Extract base64 data
+                        $imageData = explode(',', $previewImageData)[1];
+                        $imageData = base64_decode($imageData);
+                        
+                        // Create preview directory if it doesn't exist
+                        $previewDir = __DIR__ . '/uploads/page-previews';
+                        if (!is_dir($previewDir)) {
+                            mkdir($previewDir, 0755, true);
+                        }
+                        
+                        // Generate unique filename
+                        $previewFilename = 'page_' . ($pageId ?? uniqid()) . '_' . time() . '.jpg';
+                        $previewPath = $previewDir . '/' . $previewFilename;
+                        
+                        file_put_contents($previewPath, $imageData);
+                        error_log("Preview saved: " . $previewFilename);
+                    } catch (Exception $e) {
+                        error_log("Failed to save preview: " . $e->getMessage());
+                    }
+                }
 
                 if ($pageId) {
                     // Update existing page
                     error_log("Updating existing page");
-                    $stmt = $db->prepare("
-                        UPDATE landing_pages 
-                        SET html_content = ?, css_content = ?, grapesjs_data = ?, page_title = ?, updated_at = NOW()
-                        WHERE id = ? AND user_id = ?
-                    ");
-                    $result = $stmt->execute([$html, $css, $gjsData, $title, $pageId, $userId]);
+                    if ($previewFilename) {
+                        $stmt = $db->prepare("
+                            UPDATE landing_pages 
+                            SET html_content = ?, css_content = ?, grapesjs_data = ?, page_title = ?, preview_image = ?, updated_at = NOW()
+                            WHERE id = ? AND user_id = ?
+                        ");
+                        $result = $stmt->execute([$html, $css, $gjsData, $title, $previewFilename, $pageId, $userId]);
+                    } else {
+                        $stmt = $db->prepare("
+                            UPDATE landing_pages 
+                            SET html_content = ?, css_content = ?, grapesjs_data = ?, page_title = ?, updated_at = NOW()
+                            WHERE id = ? AND user_id = ?
+                        ");
+                        $result = $stmt->execute([$html, $css, $gjsData, $title, $pageId, $userId]);
+                    }
                     error_log("Update result: " . ($result ? 'SUCCESS' : 'FAILED'));
                     echo json_encode(['success' => $result, 'pageId' => $pageId, 'message' => $result ? 'Updated' : 'Failed to update']);
                 } else {
@@ -343,10 +378,10 @@ try {
                     error_log("Creating new page");
                     $token = bin2hex(random_bytes(16));
                     $stmt = $db->prepare("
-                        INSERT INTO landing_pages (user_id, share_token, html_content, css_content, grapesjs_data, page_title)
-                        VALUES (?, ?, ?, ?, ?, ?)
+                        INSERT INTO landing_pages (user_id, share_token, html_content, css_content, grapesjs_data, page_title, preview_image)
+                        VALUES (?, ?, ?, ?, ?, ?, ?)
                     ");
-                    $result = $stmt->execute([$userId, $token, $html, $css, $gjsData, $title]);
+                    $result = $stmt->execute([$userId, $token, $html, $css, $gjsData, $title, $previewFilename]);
                     $newId = $db->lastInsertId();
                     error_log("Insert result: " . ($result ? 'SUCCESS' : 'FAILED') . ", ID: " . $newId);
                     echo json_encode(['success' => $result, 'pageId' => $newId, 'token' => $token, 'message' => $result ? 'Created' : 'Failed to create']);
@@ -557,7 +592,7 @@ try {
                 if (isset($_SESSION['user_id'])) {
                     $userId = $_SESSION['user_id'];
                     $stmt = $db->prepare("
-                        SELECT id, page_title, share_token, is_active, created_at, updated_at, user_id
+                        SELECT id, page_title, share_token, is_active, created_at, updated_at, user_id, preview_image
                         FROM landing_pages 
                         WHERE user_id = ? 
                         ORDER BY updated_at DESC
@@ -566,7 +601,7 @@ try {
                 } else {
                     // Public view - show all active pages
                     $stmt = $db->prepare("
-                        SELECT id, page_title, share_token, is_active, created_at, updated_at, user_id
+                        SELECT id, page_title, share_token, is_active, created_at, updated_at, user_id, preview_image
                         FROM landing_pages 
                         WHERE is_active = 1 
                         ORDER BY updated_at DESC
@@ -590,7 +625,8 @@ try {
                         'is_active' => $page['is_active'],
                         'created_at' => $page['created_at'],
                         'updated_at' => $page['updated_at'],
-                        'view_url' => $protocol . '://' . $host . $scriptName . '/landing-page.php?token=' . $page['share_token']
+                        'view_url' => $protocol . '://' . $host . $scriptName . '/landing-page.php?token=' . $page['share_token'],
+                        'preview_image' => $page['preview_image'] ? $protocol . '://' . $host . $scriptName . '/uploads/page-previews/' . $page['preview_image'] : null
                     ];
                     
                     // Only include edit URL if user owns this page

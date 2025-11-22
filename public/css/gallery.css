@@ -750,17 +750,33 @@
     justify-content: center;
     padding: 20px;
     min-height: 200px;
+    position: relative;
+    overflow: hidden;
+}
+
+.landing-page-card .page-preview-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(to bottom, rgba(0,0,0,0.3) 0%, rgba(0,0,0,0.6) 100%);
+    z-index: 1;
 }
 
 .landing-page-card .landing-page-icon {
     font-size: 48px;
     margin-bottom: 15px;
     filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));
+    z-index: 2;
+    position: relative;
 }
 
 .landing-page-card .landing-page-info {
     text-align: center;
     width: 100%;
+    z-index: 2;
+    position: relative;
 }
 
 .landing-page-card .landing-page-title {
@@ -768,7 +784,7 @@
     font-weight: 600;
     margin: 0 0 10px 0;
     color: white;
-    text-shadow: 0 1px 3px rgba(0,0,0,0.2);
+    text-shadow: 0 2px 4px rgba(0,0,0,0.5);
 }
 
 .landing-page-card .page-status {
@@ -801,6 +817,7 @@
 
 .landing-page-card .gallery-item-overlay {
     background: rgba(0, 0, 0, 0.85);
+    z-index: 3;
 }
 
 /* Modal - Mobile First approach */

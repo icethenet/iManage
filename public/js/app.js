@@ -4,6 +4,7 @@
 const API_BASE = './api.php';
 let currentPage = 1;
 let currentFolder = '';
+let currentMediaType = ''; // '', 'image', or 'video'
 let totalPages = 1;
 let currentImageId = null;
 
@@ -87,6 +88,21 @@ function setupEventListeners() {
         currentFolder = this.value;
         currentPage = 1;
         loadImages();
+    });
+
+    // Media type filter buttons
+    document.querySelectorAll('.filter-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            // Remove active class from all buttons
+            document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+            // Add active class to clicked button
+            this.classList.add('active');
+            // Update current media type
+            currentMediaType = this.dataset.type;
+            // Reset to first page and reload
+            currentPage = 1;
+            loadImages();
+        });
     });
 
     document.getElementById('prevBtn').addEventListener('click', previousPage);
@@ -310,20 +326,42 @@ function showLoading(show = true) {
 function loadImages() {
     showLoading(true);
 
+    // If filtering for pages only, skip image API call
+    if (currentMediaType === 'page') {
+        fetch(`${API_BASE}?action=getlandingpages`)
+            .then(r => r.json())
+            .then(pagesData => {
+                if (pagesData.success) {
+                    displayGallery(pagesData.pages, { current_page: 1, total_pages: 1 });
+                    totalPages = 1;
+                } else {
+                    document.getElementById('gallery').innerHTML = 
+                        '<div class="gallery-empty"><p>No pages found</p></div>';
+                }
+            })
+            .catch(error => {
+                console.error('Error loading pages:', error);
+                document.getElementById('gallery').innerHTML = 
+                    '<div class="gallery-empty"><p>Error loading pages.</p></div>';
+            })
+            .finally(() => showLoading(false));
+        return;
+    }
+
     let url = `${API_BASE}?action=list&page=${currentPage}`;
     if (currentFolder) url += `&folder=${currentFolder}`;
+    if (currentMediaType) url += `&type=${currentMediaType}`;
 
-    // Fetch both images and landing pages
+    // Fetch images and landing pages
     Promise.all([
         fetch(url).then(r => r.json()),
         fetch(`${API_BASE}?action=getlandingpages`).then(r => r.json())
     ])
         .then(([imagesData, pagesData]) => {
             if (imagesData.success) {
-                // Always show landing pages at the top of every page
                 let items = imagesData.data;
-                if (pagesData.success && pagesData.pages.length > 0) {
-                    // Add landing pages at the beginning
+                // Add landing pages at the top only when showing all items
+                if (currentMediaType === '' && pagesData.success && pagesData.pages.length > 0) {
                     items = [...pagesData.pages, ...items];
                 }
                 displayGallery(items, imagesData.pagination);
@@ -356,9 +394,14 @@ function displayGallery(items, pagination) {
             const statusBadge = item.is_active ? '<span class="page-status active">●Active</span>' : '<span class="page-status inactive">●Inactive</span>';
             const editButton = item.can_edit ? `<button class="btn btn-sm" onclick="window.location.href='${item.edit_url}'; return false;">✏️ Edit</button>` : '';
             
+            // Use preview image if available, otherwise use gradient background
+            const backgroundStyle = item.preview_image 
+                ? `background-image: url('${item.preview_image}'); background-size: cover; background-position: center;`
+                : `background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);`;
+            
             return `
-            <div class="gallery-item landing-page-card" data-pageid="${item.id}">
-                <div class="landing-page-icon">📄</div>
+            <div class="gallery-item landing-page-card" data-pageid="${item.id}" style="${backgroundStyle}">
+                ${!item.preview_image ? '<div class="landing-page-icon">📄</div>' : '<div class="page-preview-overlay"></div>'}
                 <div class="landing-page-info">
                     <h3 class="landing-page-title">${item.title}</h3>
                     ${statusBadge}

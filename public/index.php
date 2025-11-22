@@ -71,11 +71,22 @@
             <section id="gallery-view" class="view active">
                 <div class="gallery-header">
                     <h2 data-i18n="gallery_title">Image Gallery</h2>
-                    <div class="folder-filter">
-                        <label for="folderSelect" data-i18n="gallery_folder_label">Folder:</label>
-                        <select id="folderSelect">
-                            <option value="" data-i18n="gallery_all_folders">All Folders</option>
-                        </select>
+                    <div class="gallery-filters">
+                        <div class="folder-filter">
+                            <label for="folderSelect" data-i18n="gallery_folder_label">Folder:</label>
+                            <select id="folderSelect">
+                                <option value="" data-i18n="gallery_all_folders">All Folders</option>
+                            </select>
+                        </div>
+                        <div class="media-type-filter">
+                            <label>Media Type:</label>
+                            <div class="filter-buttons">
+                                <button class="filter-btn active" data-type="">🎬 All</button>
+                                <button class="filter-btn" data-type="image">🖼️ Images</button>
+                                <button class="filter-btn" data-type="video">📹 Videos</button>
+                                <button class="filter-btn" data-type="page">📄 Pages</button>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
