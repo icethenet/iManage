@@ -1255,10 +1255,17 @@ try {
                             'prompt' => $systemPrompt . "\n\n" . $prompt,
                             'stream' => false
                         ]));
+                        curl_setopt($ch, CURLOPT_TIMEOUT, 60);
+                        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
                         
                         $response = curl_exec($ch);
                         $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+                        $curlError = curl_error($ch);
                         curl_close($ch);
+                        
+                        if ($curlError) {
+                            throw new Exception("Ollama connection error: $curlError. Is Ollama running?");
+                        }
                         
                         if ($httpCode !== 200) {
                             throw new Exception("Ollama error (HTTP $httpCode). Is Ollama running?");
@@ -1287,10 +1294,17 @@ try {
                             'temperature' => 0.7,
                             'max_tokens' => 1000
                         ]));
+                        curl_setopt($ch, CURLOPT_TIMEOUT, 60);
+                        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
                         
                         $response = curl_exec($ch);
                         $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+                        $curlError = curl_error($ch);
                         curl_close($ch);
+                        
+                        if ($curlError) {
+                            throw new Exception("LM Studio connection error: $curlError. Is LM Studio running with a model loaded?");
+                        }
                         
                         if ($httpCode !== 200) {
                             throw new Exception("LM Studio error (HTTP $httpCode). Is LM Studio running with a model loaded?");
@@ -1311,7 +1325,7 @@ try {
                             throw new Exception('Gemini API key not configured. Get a FREE key at: https://makersuite.google.com/app/apikey');
                         }
                         
-                        $ch = curl_init('https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=' . $apiKey);
+                        $ch = curl_init('https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash:generateContent?key=' . $apiKey);
                         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
                         curl_setopt($ch, CURLOPT_POST, true);
                         curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
@@ -1320,10 +1334,19 @@ try {
                                 ['parts' => [['text' => $systemPrompt . "\n\n" . $prompt]]]
                             ]
                         ]));
+                        curl_setopt($ch, CURLOPT_TIMEOUT, 30);
+                        // Fix SSL certificate issue on Windows
+                        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+                        curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
                         
                         $response = curl_exec($ch);
                         $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+                        $curlError = curl_error($ch);
                         curl_close($ch);
+                        
+                        if ($curlError) {
+                            throw new Exception("Gemini connection error: $curlError");
+                        }
                         
                         if ($httpCode !== 200) {
                             error_log("Gemini API error: $response");
@@ -1361,10 +1384,18 @@ try {
                             'temperature' => 0.7,
                             'max_tokens' => 1000
                         ]));
+                        curl_setopt($ch, CURLOPT_TIMEOUT, 30);
+                        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+                        curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
                         
                         $response = curl_exec($ch);
                         $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+                        $curlError = curl_error($ch);
                         curl_close($ch);
+                        
+                        if ($curlError) {
+                            throw new Exception("OpenAI connection error: $curlError");
+                        }
                         
                         if ($httpCode !== 200) {
                             throw new Exception("OpenAI API error (HTTP $httpCode)");
