@@ -1037,17 +1037,28 @@ try {
 
         case 'saveopenaikey':
         case 'saveaisettings':
+            header('Content-Type: application/json');
             error_log("=== saveaisettings API called ===");
-            requireLogin();
+            error_log("saveaisettings: Session user_id = " . ($_SESSION['user_id'] ?? 'NOT SET'));
             
-            // Check if user is admin
-            $db = Database::getInstance();
-            $stmt = $db->prepare("SELECT is_admin FROM users WHERE id = ?");
-            $stmt->execute([$_SESSION['user_id']]);
-            $user = $stmt->fetch(PDO::FETCH_ASSOC);
-            
-            if (!$user || !$user['is_admin']) {
-                echo json_encode(['success' => false, 'message' => 'Admin access required']);
+            try {
+                requireLogin();
+                error_log("saveaisettings: requireLogin passed");
+                
+                // Check if user is admin
+                $db = Database::getInstance();
+                $stmt = $db->prepare("SELECT is_admin FROM users WHERE id = ?");
+                $stmt->execute([$_SESSION['user_id']]);
+                $user = $stmt->fetch(PDO::FETCH_ASSOC);
+                
+                if (!$user || !$user['is_admin']) {
+                    echo json_encode(['success' => false, 'message' => 'Admin access required']);
+                    break;
+                }
+                
+            } catch (Exception $e) {
+                error_log("Admin check error: " . $e->getMessage());
+                echo json_encode(['success' => false, 'message' => 'Error checking admin status: ' . $e->getMessage()]);
                 break;
             }
             
@@ -1083,23 +1094,38 @@ try {
                 }
                 
                 echo json_encode(['success' => true, 'message' => 'AI settings saved']);
+            } catch (PDOException $e) {
+                error_log("Save AI settings - Database error: " . $e->getMessage());
+                echo json_encode(['success' => false, 'message' => 'Database error: ' . $e->getMessage()]);
             } catch (Exception $e) {
+                error_log("Save AI settings error: " . $e->getMessage());
                 echo json_encode(['success' => false, 'message' => $e->getMessage()]);
             }
             break;
             
         case 'getopenaikey':
         case 'getaisettings':
-            requireLogin();
-            
-            // Check if user is admin
-            $db = Database::getInstance();
-            $stmt = $db->prepare("SELECT is_admin FROM users WHERE id = ?");
-            $stmt->execute([$_SESSION['user_id']]);
-            $user = $stmt->fetch(PDO::FETCH_ASSOC);
-            
-            if (!$user || !$user['is_admin']) {
-                echo json_encode(['success' => false, 'message' => 'Admin access required']);
+            header('Content-Type: application/json');
+            try {
+                error_log("getaisettings: Starting request");
+                error_log("getaisettings: Session user_id = " . ($_SESSION['user_id'] ?? 'NOT SET'));
+                requireLogin();
+                error_log("getaisettings: requireLogin passed");
+                
+                // Check if user is admin
+                $db = Database::getInstance();
+                $stmt = $db->prepare("SELECT is_admin FROM users WHERE id = ?");
+                $stmt->execute([$_SESSION['user_id']]);
+                $user = $stmt->fetch(PDO::FETCH_ASSOC);
+                
+                if (!$user || !$user['is_admin']) {
+                    echo json_encode(['success' => false, 'message' => 'Admin access required']);
+                    break;
+                }
+                
+            } catch (Exception $e) {
+                error_log("Get AI settings - Admin check error: " . $e->getMessage());
+                echo json_encode(['success' => false, 'message' => 'Error: ' . $e->getMessage()]);
                 break;
             }
             
@@ -1122,7 +1148,11 @@ try {
                 
                 $settings['success'] = true;
                 echo json_encode($settings);
+            } catch (PDOException $e) {
+                error_log("Get AI settings - Database error: " . $e->getMessage());
+                echo json_encode(['success' => false, 'message' => 'Database error: ' . $e->getMessage()]);
             } catch (Exception $e) {
+                error_log("Get AI settings error: " . $e->getMessage());
                 echo json_encode(['success' => false, 'message' => $e->getMessage()]);
             }
             break;
