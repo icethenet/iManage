@@ -842,6 +842,18 @@ body.logged-in .user-is-logged-out {
     background: rgb(200, 35, 51);
 }
 
+.gallery-item-overlay .btn-design {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+}
+
+.gallery-item-overlay .btn-design:hover {
+    background: linear-gradient(135deg, #5568d3 0%, #63398b 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
 @media (max-width: 768px) {
     .gallery-item-overlay {
         opacity: 1; /* Always show on mobile */

@@ -28,6 +28,7 @@ A powerful, mobile-first image management system with advanced editing capabilit
 
 ### Advanced Features
 - 🔗 **Share Links** - Generate secure, shareable links for public viewing
+- 🎨 **Custom Landing Pages** - Design beautiful custom pages for shared galleries with GrapesJS visual editor
 - 🔒 **Security** - Authentication-based ownership, XSS protection, SQL injection prevention
 - 🌐 **Cross-Platform** - Works identically on Windows, Linux, and macOS
 - ⚡ **RESTful API** - JSON-based API for all operations
@@ -161,6 +162,7 @@ Recent additions include share token support and OAuth tables (see `database/mig
 
 ### Feature Documentation
 - **Share Link Feature** (`docs/SHARE_LINK_FEATURE.md`) - Public sharing system
+- **Custom Landing Pages** (`docs/CUSTOM_LANDING_PAGES.md`) - GrapesJS visual page builder
 - **Crop Tool Guide** (`docs/CROP_TOOL_QUICKSTART.md`) - Cropping walkthrough
 - **Video Support** (`docs/VIDEO_SUPPORT.md`) - Video upload and thumbnail generation
 - **Multi-Language Support** (`docs/MULTI_LANGUAGE_SUPPORT.md`) - i18n guide and language management
@@ -383,6 +385,7 @@ Icon Note: Add real PNG icons (`icon-192.png`, `icon-512.png`, `icon-512-maskabl
 - [x] Progressive Web App (PWA)
 - [x] Video thumbnail support
 - [x] Multi-language support
+- [x] Custom landing pages with GrapesJS visual editor
 
 ---
 

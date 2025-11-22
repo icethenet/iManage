@@ -3,6 +3,11 @@
  * Autoloader for classes
  */
 
+// Add CORS headers for AI features
+header('Access-Control-Allow-Origin: *');
+header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
+header('Access-Control-Allow-Headers: Content-Type, Authorization');
+
 function autoload($class) {
     $appDir = dirname(__DIR__) . DIRECTORY_SEPARATOR . 'app';
 
@@ -118,6 +123,16 @@ if (in_array($origin, $allowedOrigins)) {
 header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
 header('Access-Control-Allow-Headers: Content-Type, X-CSRF-Token');
 
+// Helper function to check authentication
+function requireLogin() {
+    if (!isset($_SESSION['user_id'])) {
+        http_response_code(401);
+        header('Content-Type: application/json');
+        echo json_encode(['success' => false, 'error' => 'Authentication required']);
+        exit;
+    }
+}
+
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     http_response_code(200);
     exit;
@@ -215,6 +230,388 @@ try {
             }
             $controller = new ImageController();
             $controller->getShared($token);
+            break;
+
+        // Landing Page endpoints
+        case 'savelandingpage':
+            requireLogin();
+            $input = json_decode(file_get_contents('php://input'), true);
+            $token = $input['token'] ?? null;
+            $html = $input['html_content'] ?? '';
+            $css = $input['css_content'] ?? '';
+            $gjsData = $input['grapesjs_data'] ?? '';
+            $title = $input['page_title'] ?? 'Shared Gallery';
+
+            if (!$token) {
+                echo json_encode(['success' => false, 'message' => 'Token required']);
+                exit;
+            }
+
+            $db = Database::getInstance()->getConnection();
+            $userId = $_SESSION['user_id'];
+
+            // Check if landing page exists
+            $stmt = $db->prepare("SELECT id FROM landing_pages WHERE user_id = ? AND share_token = ?");
+            $stmt->execute([$userId, $token]);
+            $existing = $stmt->fetch();
+
+            if ($existing) {
+                // Update existing
+                $stmt = $db->prepare("
+                    UPDATE landing_pages 
+                    SET html_content = ?, css_content = ?, grapesjs_data = ?, page_title = ?, updated_at = NOW()
+                    WHERE id = ? AND user_id = ?
+                ");
+                $result = $stmt->execute([$html, $css, $gjsData, $title, $existing['id'], $userId]);
+            } else {
+                // Insert new
+                $stmt = $db->prepare("
+                    INSERT INTO landing_pages (user_id, share_token, html_content, css_content, grapesjs_data, page_title)
+                    VALUES (?, ?, ?, ?, ?, ?)
+                ");
+                $result = $stmt->execute([$userId, $token, $html, $css, $gjsData, $title]);
+            }
+
+            echo json_encode(['success' => $result, 'message' => $result ? 'Saved' : 'Failed']);
+            break;
+
+        case 'loadlandingpage':
+            $token = $_GET['token'] ?? null;
+            if (!$token) {
+                echo json_encode(['success' => false, 'message' => 'Token required']);
+                exit;
+            }
+
+            $db = Database::getInstance()->getConnection();
+            $stmt = $db->prepare("
+                SELECT html_content, css_content, grapesjs_data, page_title 
+                FROM landing_pages 
+                WHERE share_token = ? AND is_active = 1
+            ");
+            $stmt->execute([$token]);
+            $design = $stmt->fetch(PDO::FETCH_ASSOC);
+
+            echo json_encode(['success' => !!$design, 'design' => $design]);
+            break;
+
+        case 'savecustompage':
+            error_log("=== savecustompage called ===");
+            error_log("Session user_id: " . ($_SESSION['user_id'] ?? 'NOT SET'));
+            error_log("Request method: " . $_SERVER['REQUEST_METHOD']);
+            
+            requireLogin();
+            
+            try {
+                $rawInput = file_get_contents('php://input');
+                error_log("Raw input length: " . strlen($rawInput));
+                
+                $input = json_decode($rawInput, true);
+                
+                if (json_last_error() !== JSON_ERROR_NONE) {
+                    error_log("JSON error: " . json_last_error_msg());
+                    http_response_code(400);
+                    echo json_encode(['success' => false, 'message' => 'Invalid JSON: ' . json_last_error_msg()]);
+                    exit;
+                }
+                
+                $pageId = $input['id'] ?? null;
+                $html = $input['html_content'] ?? '';
+                $css = $input['css_content'] ?? '';
+                $gjsData = $input['grapesjs_data'] ?? '';
+                $title = $input['page_title'] ?? 'Untitled Page';
+                $userId = $_SESSION['user_id'];
+                
+                error_log("Page ID: " . ($pageId ?? 'NEW'));
+                error_log("Title: " . $title);
+                error_log("User ID: " . $userId);
+
+                $db = Database::getInstance();
+
+                if ($pageId) {
+                    // Update existing page
+                    error_log("Updating existing page");
+                    $stmt = $db->prepare("
+                        UPDATE landing_pages 
+                        SET html_content = ?, css_content = ?, grapesjs_data = ?, page_title = ?, updated_at = NOW()
+                        WHERE id = ? AND user_id = ?
+                    ");
+                    $result = $stmt->execute([$html, $css, $gjsData, $title, $pageId, $userId]);
+                    error_log("Update result: " . ($result ? 'SUCCESS' : 'FAILED'));
+                    echo json_encode(['success' => $result, 'pageId' => $pageId, 'message' => $result ? 'Updated' : 'Failed to update']);
+                } else {
+                    // Create new page with unique token
+                    error_log("Creating new page");
+                    $token = bin2hex(random_bytes(16));
+                    $stmt = $db->prepare("
+                        INSERT INTO landing_pages (user_id, share_token, html_content, css_content, grapesjs_data, page_title)
+                        VALUES (?, ?, ?, ?, ?, ?)
+                    ");
+                    $result = $stmt->execute([$userId, $token, $html, $css, $gjsData, $title]);
+                    $newId = $db->lastInsertId();
+                    error_log("Insert result: " . ($result ? 'SUCCESS' : 'FAILED') . ", ID: " . $newId);
+                    echo json_encode(['success' => $result, 'pageId' => $newId, 'token' => $token, 'message' => $result ? 'Created' : 'Failed to create']);
+                }
+            } catch (Exception $e) {
+                error_log("Exception in saveCustomPage: " . $e->getMessage());
+                error_log("Stack trace: " . $e->getTraceAsString());
+                http_response_code(500);
+                echo json_encode(['success' => false, 'message' => 'Server error: ' . $e->getMessage()]);
+            }
+            break;
+
+        case 'loadcustompage':
+            requireLogin();
+            $pageId = $_GET['id'] ?? null;
+            $userId = $_SESSION['user_id'];
+
+            if (!$pageId) {
+                echo json_encode(['success' => false, 'message' => 'Page ID required']);
+                exit;
+            }
+
+            $db = Database::getInstance();
+            $stmt = $db->prepare("
+                SELECT id, html_content, css_content, grapesjs_data, page_title, share_token
+                FROM landing_pages 
+                WHERE id = ? AND user_id = ?
+            ");
+            $stmt->execute([$pageId, $userId]);
+            $page = $stmt->fetch(PDO::FETCH_ASSOC);
+
+            echo json_encode(['success' => !!$page, 'page' => $page]);
+            break;
+
+        case 'deletecustompage':
+            requireLogin();
+            $input = json_decode(file_get_contents('php://input'), true);
+            $pageId = $input['id'] ?? null;
+            $userId = $_SESSION['user_id'];
+
+            if (!$pageId) {
+                echo json_encode(['success' => false, 'message' => 'Page ID required']);
+                exit;
+            }
+
+            $db = Database::getInstance();
+            $stmt = $db->prepare("DELETE FROM landing_pages WHERE id = ? AND user_id = ?");
+            $result = $stmt->execute([$pageId, $userId]);
+
+            echo json_encode(['success' => $result, 'message' => $result ? 'Deleted' : 'Failed to delete']);
+            break;
+
+        case 'getmyimages':
+            // Get user's images for GrapesJS Asset Manager
+            requireLogin();
+            
+            try {
+                $userId = $_SESSION['user_id'];
+                $db = Database::getInstance();
+                
+                // Get username for path construction
+                $userStmt = $db->prepare("SELECT username FROM users WHERE id = ?");
+                $userStmt->execute([$userId]);
+                $user = $userStmt->fetch(PDO::FETCH_ASSOC);
+                $username = $user ? $user['username'] : 'unknown';
+                
+                $stmt = $db->prepare("
+                    SELECT id, filename, original_name, file_size, width, height, created_at, folder
+                    FROM images 
+                    WHERE user_id = ? 
+                    ORDER BY created_at DESC
+                ");
+                $stmt->execute([$userId]);
+                $images = $stmt->fetchAll(PDO::FETCH_ASSOC);
+                
+                // Format for GrapesJS Asset Manager
+                $assets = [];
+                foreach ($images as $img) {
+                    // Construct full URL with protocol and domain
+                    $protocol = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https' : 'http';
+                    $host = $_SERVER['HTTP_HOST']; // e.g., localhost
+                    $scriptName = dirname($_SERVER['SCRIPT_NAME']); // e.g., /imanage/public
+                    
+                    // Build path: uploads/username/folder/original/filename
+                    // Files are stored in: uploads/username/folder/original/, /thumb/, /pristine/
+                    $folderPath = $img['folder'] ? '/' . rawurlencode($img['folder']) : '';
+                    $uploadsPath = $protocol . '://' . $host . $scriptName . '/uploads/' . $username . $folderPath . '/original/';
+                    $fullPath = $uploadsPath . $img['filename'];
+                    
+                    // Thumbnail path
+                    $thumbPath = $protocol . '://' . $host . $scriptName . '/uploads/' . $username . $folderPath . '/thumb/' . $img['filename'];
+                    
+                    // Check if it's a video based on extension
+                    $ext = strtolower(pathinfo($img['filename'], PATHINFO_EXTENSION));
+                    $isVideo = in_array($ext, ['mp4', 'webm', 'ogg', 'mov', 'avi']);
+                    
+                    $assets[] = [
+                        'id' => $img['id'],
+                        'type' => $isVideo ? 'video' : 'image',
+                        'src' => $fullPath, // Full size image from original/
+                        'height' => $img['height'] ?? 300,
+                        'width' => $img['width'] ?? 300,
+                        'name' => $img['original_name'] ?? $img['filename']
+                    ];
+                }
+                
+                header('Content-Type: application/json');
+                echo json_encode(['success' => true, 'assets' => $assets, 'count' => count($assets)]);
+            } catch (Exception $e) {
+                error_log("getmyimages error: " . $e->getMessage());
+                header('Content-Type: application/json');
+                http_response_code(500);
+                echo json_encode(['success' => false, 'error' => $e->getMessage()]);
+            }
+            break;
+
+        case 'getpublicimages':
+            // Get images for a public landing page (no authentication required)
+            try {
+                $token = $_GET['token'] ?? null;
+                
+                if (!$token) {
+                    header('Content-Type: application/json');
+                    http_response_code(400);
+                    echo json_encode(['success' => false, 'error' => 'No token provided']);
+                    break;
+                }
+                
+                $db = Database::getInstance();
+                
+                // Get user_id from landing page token
+                $stmt = $db->prepare("SELECT user_id FROM landing_pages WHERE share_token = ? AND is_active = 1");
+                $stmt->execute([$token]);
+                $page = $stmt->fetch(PDO::FETCH_ASSOC);
+                
+                if (!$page) {
+                    header('Content-Type: application/json');
+                    http_response_code(404);
+                    echo json_encode(['success' => false, 'error' => 'Page not found']);
+                    break;
+                }
+                
+                $userId = $page['user_id'];
+                
+                // Get username for path construction
+                $userStmt = $db->prepare("SELECT username FROM users WHERE id = ?");
+                $userStmt->execute([$userId]);
+                $user = $userStmt->fetch(PDO::FETCH_ASSOC);
+                $username = $user ? $user['username'] : 'unknown';
+                
+                // Get user's images
+                $stmt = $db->prepare("
+                    SELECT id, filename, original_name, file_size, width, height, created_at, folder
+                    FROM images 
+                    WHERE user_id = ? 
+                    ORDER BY created_at DESC
+                ");
+                $stmt->execute([$userId]);
+                $images = $stmt->fetchAll(PDO::FETCH_ASSOC);
+                
+                // Format for GrapesJS Asset Manager
+                $assets = [];
+                foreach ($images as $img) {
+                    // Construct full URL with protocol and domain
+                    $protocol = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https' : 'http';
+                    $host = $_SERVER['HTTP_HOST']; // e.g., localhost
+                    $scriptName = dirname($_SERVER['SCRIPT_NAME']); // e.g., /imanage/public
+                    
+                    // Build path: uploads/username/folder/original/filename
+                    $folderPath = $img['folder'] ? '/' . rawurlencode($img['folder']) : '';
+                    $uploadsPath = $protocol . '://' . $host . $scriptName . '/uploads/' . $username . $folderPath . '/original/';
+                    $fullPath = $uploadsPath . $img['filename'];
+                    
+                    // Thumbnail path
+                    $thumbPath = $protocol . '://' . $host . $scriptName . '/uploads/' . $username . $folderPath . '/thumb/' . $img['filename'];
+                    
+                    // Check if it's a video based on extension
+                    $ext = strtolower(pathinfo($img['filename'], PATHINFO_EXTENSION));
+                    $isVideo = in_array($ext, ['mp4', 'webm', 'ogg', 'mov', 'avi']);
+                    
+                    $assets[] = [
+                        'id' => $img['id'],
+                        'type' => $isVideo ? 'video' : 'image',
+                        'src' => $fullPath,
+                        'height' => $img['height'] ?? 300,
+                        'width' => $img['width'] ?? 300,
+                        'name' => $img['original_name'] ?? $img['filename'],
+                        'folder' => $img['folder'] ?? ''
+                    ];
+                }
+                
+                header('Content-Type: application/json');
+                echo json_encode(['success' => true, 'assets' => $assets, 'count' => count($assets)]);
+            } catch (Exception $e) {
+                error_log("getpublicimages error: " . $e->getMessage());
+                header('Content-Type: application/json');
+                http_response_code(500);
+                echo json_encode(['success' => false, 'error' => $e->getMessage()]);
+            }
+            break;
+
+        case 'getlandingpages':
+            // Get all active landing pages for gallery display (public access)
+            try {
+                $db = Database::getInstance();
+                
+                // If logged in, show all user's pages. If not logged in, show all active pages from all users
+                if (isset($_SESSION['user_id'])) {
+                    $userId = $_SESSION['user_id'];
+                    $stmt = $db->prepare("
+                        SELECT id, page_title, share_token, is_active, created_at, updated_at, user_id
+                        FROM landing_pages 
+                        WHERE user_id = ? 
+                        ORDER BY updated_at DESC
+                    ");
+                    $stmt->execute([$userId]);
+                } else {
+                    // Public view - show all active pages
+                    $stmt = $db->prepare("
+                        SELECT id, page_title, share_token, is_active, created_at, updated_at, user_id
+                        FROM landing_pages 
+                        WHERE is_active = 1 
+                        ORDER BY updated_at DESC
+                    ");
+                    $stmt->execute();
+                }
+                
+                $pages = $stmt->fetchAll(PDO::FETCH_ASSOC);
+                
+                // Format for gallery display
+                $formatted = array_map(function($page) {
+                    $protocol = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https' : 'http';
+                    $host = $_SERVER['HTTP_HOST'];
+                    $scriptName = dirname($_SERVER['SCRIPT_NAME']);
+                    
+                    $result = [
+                        'id' => $page['id'],
+                        'type' => 'landing_page',
+                        'title' => $page['page_title'],
+                        'share_token' => $page['share_token'],
+                        'is_active' => $page['is_active'],
+                        'created_at' => $page['created_at'],
+                        'updated_at' => $page['updated_at'],
+                        'view_url' => $protocol . '://' . $host . $scriptName . '/landing-page.php?token=' . $page['share_token']
+                    ];
+                    
+                    // Only include edit URL if user owns this page
+                    if (isset($_SESSION['user_id']) && $_SESSION['user_id'] == $page['user_id']) {
+                        $result['edit_url'] = $protocol . '://' . $host . $scriptName . '/page-designer.php?id=' . $page['id'];
+                        $result['can_edit'] = true;
+                    } else {
+                        $result['can_edit'] = false;
+                    }
+                    
+                    return $result;
+                }, $pages);
+                
+                header('Content-Type: application/json');
+                echo json_encode(['success' => true, 'pages' => $formatted, 'count' => count($formatted)]);
+            } catch (Exception $e) {
+                error_log("getlandingpages error: " . $e->getMessage());
+                header('Content-Type: application/json');
+                http_response_code(500);
+                echo json_encode(['success' => false, 'error' => $e->getMessage()]);
+            }
             break;
 
         // User endpoints

@@ -3,9 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Shared Image</title>
-    <link rel="stylesheet" href="css/style.css">
-    <link rel="stylesheet" href="css/gallery.css">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <title>Shared Image - GrapesJS Ready</title>
+    <link rel="stylesheet" href="css/style.css?v=<?= time() ?>">
+    <link rel="stylesheet" href="css/gallery.css?v=<?= time() ?>">
+    <style id="custom-landing-styles">
+        /* Custom landing page styles will be injected here */
+    </style>
     <style>
         body {
             background: #f5f5f5;
@@ -99,10 +105,52 @@
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
+        
+        .design-mode-btn {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            padding: 15px 30px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 50px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+            transition: all 0.3s;
+            z-index: 1000;
+        }
+        
+        .design-mode-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+        }
+        
+        .design-mode-btn:active {
+            transform: translateY(-1px);
+        }
+        
+        #custom-landing-container {
+            display: none;
+        }
+        
+        #custom-landing-container.active {
+            display: block;
+        }
+        
+        #default-share-container.hidden {
+            display: none !important;
+        }
     </style>
 </head>
 <body>
-    <div class="share-container">
+    <!-- Custom Landing Page Container (if exists) -->
+    <div id="custom-landing-container"></div>
+    
+    <!-- Default Share View Container -->
+    <div id="default-share-container" class="share-container">
         <div id="loadingState" class="loading">
             <div class="spinner"></div>
             <p>Loading shared image...</p>
@@ -141,6 +189,11 @@
             </div>
         </div>
     </div>
+    
+    <!-- Design Mode Button (shown only for logged-in owner) -->
+    <button id="designModeBtn" class="design-mode-btn" style="display: none;">
+        🎨 Design Landing Page
+    </button>
 
     <script>
         const API_BASE = './api.php';
@@ -148,11 +201,48 @@
         // Get share token from URL
         const urlParams = new URLSearchParams(window.location.search);
         const shareToken = urlParams.get('share');
+        let hasCustomLanding = false;
 
         if (!shareToken) {
             showError();
         } else {
+            // First check if there's a custom landing page
+            checkCustomLanding(shareToken);
             loadSharedImage(shareToken);
+        }
+
+        async function checkCustomLanding(token) {
+            try {
+                const response = await fetch(`${API_BASE}?action=loadLandingPage&token=${token}`);
+                const data = await response.json();
+
+                if (data.success && data.design && data.design.html_content) {
+                    hasCustomLanding = true;
+                    displayCustomLanding(data.design);
+                }
+            } catch (error) {
+                console.error('Error checking custom landing:', error);
+            }
+        }
+
+        function displayCustomLanding(design) {
+            // Hide default container
+            document.getElementById('default-share-container').classList.add('hidden');
+            
+            // Show custom landing
+            const container = document.getElementById('custom-landing-container');
+            container.innerHTML = design.html_content;
+            container.classList.add('active');
+            
+            // Inject custom CSS
+            if (design.css_content) {
+                document.getElementById('custom-landing-styles').textContent = design.css_content;
+            }
+            
+            // Update page title
+            if (design.page_title) {
+                document.title = design.page_title;
+            }
         }
 
         async function loadSharedImage(token) {
@@ -192,6 +282,59 @@
             document.getElementById('loadingState').style.display = 'none';
             document.getElementById('errorState').style.display = 'block';
         }
+        
+        // Check if user is logged in and is the owner
+        async function checkDesignPermission() {
+            console.log('[GrapesJS] Checking design permission for token:', shareToken);
+            
+            try {
+                const statusResponse = await fetch(`${API_BASE}?action=check_status`);
+                const statusData = await statusResponse.json();
+                console.log('[GrapesJS] Login status:', statusData);
+                
+                // Fix property name: API returns 'logged_in' not 'loggedIn'
+                if (statusData.success && statusData.logged_in) {
+                    console.log('[GrapesJS] User is logged in, checking ownership...');
+                    
+                    // Check if user owns this shared image
+                    const imageResponse = await fetch(`${API_BASE}?action=shared&token=${shareToken}`);
+                    const imageData = await imageResponse.json();
+                    console.log('[GrapesJS] Image data:', imageData);
+                    
+                    // Fix property name: API returns user.id not userId
+                    const currentUserId = statusData.user?.id;
+                    const imageOwnerId = imageData.data?.user_id;
+                    
+                    console.log('[GrapesJS] Comparing - Image owner:', imageOwnerId, 'Current user:', currentUserId);
+                    console.log('[GrapesJS] Types - Image owner type:', typeof imageOwnerId, 'Current user type:', typeof currentUserId);
+                    
+                    // Use == instead of === to handle string vs number comparison
+                    if (imageData.success && imageData.data && imageOwnerId == currentUserId) {
+                        // Show design button for owner
+                        console.log('[GrapesJS] ✅ User owns this image! Showing design button');
+                        const designBtn = document.getElementById('designModeBtn');
+                        designBtn.style.display = 'block';
+                        designBtn.addEventListener('click', () => {
+                            console.log('[GrapesJS] Design button clicked, redirecting...');
+                            window.location.href = `design-landing.php?share=${shareToken}`;
+                        });
+                    } else {
+                        console.log('[GrapesJS] ❌ User does not own this image or data missing');
+                        console.log('[GrapesJS] Debug - imageData:', imageData);
+                        console.log('[GrapesJS] Debug - statusData:', statusData);
+                    }
+                } else {
+                    console.log('[GrapesJS] ❌ User is not logged in');
+                    console.log('[GrapesJS] Debug - statusData:', statusData);
+                }
+            } catch (error) {
+                console.error('[GrapesJS] Error checking design permission:', error);
+            }
+        }
+        
+        // Check permissions after page loads
+        console.log('[GrapesJS] Scheduling permission check...');
+        setTimeout(checkDesignPermission, 500);
     </script>
 </body>
 </html>

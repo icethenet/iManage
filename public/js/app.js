@@ -95,6 +95,14 @@ function setupEventListeners() {
     // Search
     document.getElementById('searchInput').addEventListener('keyup', debounce(searchImages, 500));
 
+    // Page Designer Button
+    const pageDesignerBtn = document.getElementById('pageDesignerBtn');
+    if (pageDesignerBtn) {
+        pageDesignerBtn.addEventListener('click', function() {
+            window.location.href = 'my-pages.php';
+        });
+    }
+
     // Upload form
     // Disabled legacy single-file handler (multi-file logic now lives in upload.js)
     // document.getElementById('uploadForm').addEventListener('submit', handleImageUpload);
@@ -243,64 +251,109 @@ function loadImages() {
     let url = `${API_BASE}?action=list&page=${currentPage}`;
     if (currentFolder) url += `&folder=${currentFolder}`;
 
-    fetch(url)
-        .then(response => {
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-            return response.json();
-        })
-        .then(data => {
-            if (data.success) {
-                displayGallery(data.data);
-                updatePagination(data.pagination);
-                totalPages = data.pagination.total_pages;
+    // Fetch both images and landing pages
+    Promise.all([
+        fetch(url).then(r => r.json()),
+        fetch(`${API_BASE}?action=getlandingpages`).then(r => r.json())
+    ])
+        .then(([imagesData, pagesData]) => {
+            if (imagesData.success) {
+                // Always show landing pages at the top of every page
+                let items = imagesData.data;
+                if (pagesData.success && pagesData.pages.length > 0) {
+                    // Add landing pages at the beginning
+                    items = [...pagesData.pages, ...items];
+                }
+                displayGallery(items, imagesData.pagination);
+                totalPages = imagesData.pagination.total_pages;
             } else {
-                console.error('API returned error:', data.error);
+                console.error('API returned error:', imagesData.error);
                 document.getElementById('gallery').innerHTML = 
-                    `<div class="gallery-empty"><p>Error: ${data.error || 'Failed to load images'}</p></div>`;
+                    `<div class="gallery-empty"><p>Error: ${imagesData.error || 'Failed to load images'}</p></div>`;
             }
         })
         .catch(error => {
-            console.error('Error loading images:', error);
+            console.error('Error loading gallery:', error);
             document.getElementById('gallery').innerHTML = 
-                '<div class="gallery-empty"><p>Error loading images. Please try refreshing the page.</p></div>';
+                '<div class="gallery-empty"><p>Error loading gallery. Please try refreshing the page.</p></div>';
         })
         .finally(() => showLoading(false));
 }
 
-function displayGallery(images) {
+function displayGallery(items, pagination) {
     const gallery = document.getElementById('gallery');
     
-    if (images.length === 0) {
+    if (items.length === 0) {
         gallery.innerHTML = '<div class="gallery-empty"><p>No images found</p></div>';
         return;
     }
 
-    gallery.innerHTML = images.map(image => {
-        // Add cache-busting timestamp to thumbnail URLs to force reload after manipulations
-        const thumbnailUrl = `${image.thumbnail_url}?t=${new Date().getTime()}`;
-        const isVideo = image.file_type === 'video';
+    gallery.innerHTML = items.map(item => {
+        // Landing page card
+        if (item.type === 'landing_page') {
+            const statusBadge = item.is_active ? '<span class="page-status active">●Active</span>' : '<span class="page-status inactive">●Inactive</span>';
+            const editButton = item.can_edit ? `<button class="btn btn-sm" onclick="window.location.href='${item.edit_url}'; return false;">✏️ Edit</button>` : '';
+            
+            return `
+            <div class="gallery-item landing-page-card" data-pageid="${item.id}">
+                <div class="landing-page-icon">📄</div>
+                <div class="landing-page-info">
+                    <h3 class="landing-page-title">${item.title}</h3>
+                    ${statusBadge}
+                    <p class="landing-page-updated">Updated: ${new Date(item.updated_at).toLocaleDateString()}</p>
+                </div>
+                <div class="gallery-item-overlay">
+                    ${editButton}
+                    <button class="btn btn-sm" onclick="window.open('${item.view_url}', '_blank'); return false;">🔍 View</button>
+                    <button class="btn btn-sm" onclick="copyToClipboard('${item.view_url}'); return false;">🔗 Copy Link</button>
+                </div>
+            </div>
+        `;
+        }
+        
+        // Regular image card
+        const thumbnailUrl = `${item.thumbnail_url}?t=${new Date().getTime()}`;
+        const isVideo = item.file_type === 'video';
         const videoIcon = isVideo ? '<div class="video-indicator">▶️ VIDEO</div>' : '';
+        
+        const designButton = (item.shared && item.share_token) 
+            ? `<button class="btn btn-sm btn-design" onclick="event.stopPropagation(); window.location.href='design-landing.php?share=${item.share_token}'; return false;">🎨 Design</button>`
+            : '';
         
         return `
         <div class="gallery-item ${isVideo ? 'is-video' : ''}" 
-             data-imageid="${image.id}"
-             data-filename="${image.title || image.original_name}"
-             data-filesize="${image.file_size || ''}"
-             data-uploaddate="${image.uploaded_at || ''}"
-             onclick="openImageModal(${image.id})">
-            <div class="gallery-item-folder-label">${image.folder}</div>
-            <img src="${thumbnailUrl}" alt="${image.title || image.original_name}">
+             data-imageid="${item.id}"
+             data-filename="${item.title || item.original_name}"
+             data-filesize="${item.file_size || ''}"
+             data-uploaddate="${item.uploaded_at || ''}"
+             onclick="openImageModal(${item.id})">
+            <div class="gallery-item-folder-label">${item.folder}</div>
+            <img src="${thumbnailUrl}" alt="${item.title || item.original_name}">
             ${videoIcon}
             <div class="gallery-item-overlay">
-                <button class="btn btn-sm" onclick="openImageModal(${image.id}); return false;">✏️ Edit</button>
+                <button class="btn btn-sm" onclick="openImageModal(${item.id}); return false;">✏️ Edit</button>
                 <button class="btn btn-sm" onclick="event.stopPropagation(); if(window.lightbox) window.lightbox.openFromGallery(this.closest('.gallery-item')); return false;">🔍 View</button>
-                <button class="btn btn-sm btn-danger" onclick="deleteImageQuick(${image.id}); return false;">Delete</button>
+                ${designButton}
+                <button class="btn btn-sm btn-danger" onclick="deleteImageQuick(${item.id}); return false;">Delete</button>
             </div>
         </div>
     `;
     }).join('');
+    
+    // Update pagination if provided
+    if (pagination) {
+        updatePagination(pagination);
+    }
+}
+
+// Helper function to copy to clipboard
+function copyToClipboard(text) {
+    navigator.clipboard.writeText(text).then(() => {
+        alert('Link copied to clipboard!');
+    }).catch(err => {
+        console.error('Failed to copy:', err);
+        prompt('Copy this link:', text);
+    });
 }
 
 function updatePagination(pagination) {

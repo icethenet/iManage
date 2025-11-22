@@ -9,6 +9,14 @@
     <link rel="icon" type="image/png" href="img/icons/icon-192.png">
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="css/gallery.css">
+    <!-- TensorFlow.js for AI Features -->
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.11.0/dist/tf.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/mobilenet@2.1.0/dist/mobilenet.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd@2.2.3/dist/coco-ssd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@vladmandic/face-api@1.7.12/dist/face-api.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/nsfwjs@2.4.2/dist/nsfwjs.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@4.1.2/dist/tesseract.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/node-vibrant@3.2.1-alpha.1/dist/vibrant.min.js"></script>
 </head>
 <body>
     <div class="container">
@@ -46,6 +54,13 @@
                     <option value="de">Deutsch</option>
                     <option value="zh">简体中文</option>
                 </select>
+                <!-- Page Designer Button -->
+                <button class="btn btn-primary" id="pageDesignerBtn" title="Open Page Designer" aria-label="Open Page Designer" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; margin-right: 10px;">
+                    📄 Designer
+                </button>
+                <!-- Theme Controls -->
+                <button class="btn theme-settings" id="themeSettingsBtn" title="Theme Settings" aria-label="Theme Settings">🎨</button>
+                <button class="btn theme-toggle" id="themeToggleBtn" title="Toggle Theme" aria-label="Toggle Theme">🌙</button>
                 <span class="username-display user-is-logged-in" id="username-display"></span>
                 <a href="#" id="logout-link" class="nav-link user-is-logged-in" data-i18n="nav_logout">Logout</a>
             </div>
@@ -1681,5 +1696,7 @@
     <script src="js/admin.js"></script>
     <script src="js/admin-analytics.js"></script>
     <script src="js/admin-security.js"></script>
+    <script src="js/ai-tagging.js"></script>
+    <script src="js/ai-features.js"></script>
 </body>
 </html>
