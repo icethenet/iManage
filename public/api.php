@@ -171,7 +171,7 @@ function checkRateLimit() {
 // Apply rate limiting
 checkRateLimit();
 
-$action = isset($_GET['action']) ? preg_replace('/[^a-z_]/', '', strtolower($_GET['action'])) : 'list';
+$action = isset($_GET['action']) ? preg_replace('/[^a-z0-9_]/', '', strtolower($_GET['action'])) : 'list';
 $id = isset($_GET['id']) ? intval($_GET['id']) : null;
 $name = isset($_GET['name']) ? preg_replace('/[^a-zA-Z0-9_-]/', '', $_GET['name']) : null;
 

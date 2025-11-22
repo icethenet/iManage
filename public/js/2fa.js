@@ -12,7 +12,7 @@ async function load2FAStatus() {
         const data = await response.json();
         
         if (data.success) {
-            render2FAStatus(data.data);
+            renderUser2FAStatus(data.data);
         } else {
             document.getElementById('2fa-status').innerHTML = '<p style="color: #dc3545;">Failed to load 2FA status</p>';
         }
@@ -22,8 +22,8 @@ async function load2FAStatus() {
     }
 }
 
-// Render 2FA status
-function render2FAStatus(status) {
+// Render user's 2FA status (renamed to avoid collision with admin function)
+function renderUser2FAStatus(status) {
     const statusDiv = document.getElementById('2fa-status');
     
     if (status.enabled) {
