@@ -44,6 +44,37 @@ $pageId = $_GET['id'] ?? null;
             overflow: hidden;
         }
         
+        .panel__title {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 0 10px;
+            flex-grow: 1;
+            max-width: 400px;
+        }
+        
+        .panel__title label {
+            color: #ddd;
+            font-size: 12px;
+            white-space: nowrap;
+        }
+        
+        .panel__title input {
+            flex: 1;
+            padding: 5px 8px;
+            border: 1px solid #555;
+            background: #333;
+            color: #fff;
+            border-radius: 3px;
+            font-size: 13px;
+            min-width: 0;
+        }
+        
+        .panel__title input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
         .panel__basic-actions {
             display: flex;
             gap: 2px;
@@ -148,6 +179,10 @@ $pageId = $_GET['id'] ?? null;
     <div class="panel__top">
         <div class="panel__basic-actions"></div>
         <div class="panel__devices"></div>
+        <div class="panel__title">
+            <label for="pageTitle">Page Title:</label>
+            <input type="text" id="pageTitle" placeholder="Enter page title..." value="Untitled Page" onchange="updateDocumentTitle()">
+        </div>
         <div class="panel__switcher"></div>
         <div class="panel__actions"></div>
     </div>
@@ -808,6 +843,11 @@ $pageId = $_GET['id'] ?? null;
                 const data = await response.json();
                 
                 if (data.success && data.page) {
+                    // Set page title
+                    if (data.page.page_title) {
+                        document.getElementById('pageTitle').value = data.page.page_title;
+                    }
+                    
                     if (data.page.grapesjs_data) {
                         editor.loadProjectData(JSON.parse(data.page.grapesjs_data));
                     } else if (data.page.html_content) {
@@ -823,13 +863,18 @@ $pageId = $_GET['id'] ?? null;
             }
         }
         
+        function updateDocumentTitle() {
+            const title = document.getElementById('pageTitle').value || 'Untitled Page';
+            document.title = title + ' - Page Designer - iManage';
+        }
+        
         async function savePage() {
             try {
                 console.log('💾 Starting save...');
                 let html = editor.getHtml();
                 const css = editor.getCss();
                 const projectData = editor.getProjectData();
-                const title = document.querySelector('h1')?.textContent || 'Untitled Page';
+                const title = document.getElementById('pageTitle').value || 'Untitled Page';
                 
                 // Add gallery loader script if page contains imanage galleries
                 if (html.includes('imanage-gallery-grid') || html.includes('imanage-gallery-masonry') || html.includes('imanage-gallery-slider')) {
