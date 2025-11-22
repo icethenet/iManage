@@ -1606,7 +1606,55 @@ $pageId = $_GET['id'] ?? null;
                     console.log('✅ Text spun successfully');
                 } else {
                     console.error('❌ API Error:', data.message || data.error);
-                    alert('Error: ' + (data.message || data.error || 'Failed to spin text'));
+                    const errorMsg = data.message || data.error || 'Failed to spin text';
+                    
+                    // Check if it's a Gemini API key error
+                    if (errorMsg.includes('Gemini API key') || errorMsg.includes('gemini')) {
+                        const getKeyMsg = 'Gemini API key not configured!\n\n' +
+                            '1. Get a FREE API key from Google\n' +
+                            '2. Go to Admin > Settings > AI Integration\n' +
+                            '3. Paste your API key\n' +
+                            '4. Click Save\n\n' +
+                            'Click OK to open Google AI Studio now.';
+                        
+                        if (confirm(getKeyMsg)) {
+                            window.open('https://makersuite.google.com/app/apikey', '_blank');
+                        }
+                    } else if (errorMsg.includes('OpenAI API key')) {
+                        const getKeyMsg = 'OpenAI API key not configured!\n\n' +
+                            '1. Get an API key from OpenAI\n' +
+                            '2. Go to Admin > Settings > AI Integration\n' +
+                            '3. Paste your API key\n' +
+                            '4. Click Save\n\n' +
+                            'Click OK to open OpenAI Platform now.';
+                        
+                        if (confirm(getKeyMsg)) {
+                            window.open('https://platform.openai.com/api-keys', '_blank');
+                        }
+                    } else if (errorMsg.includes('Ollama') || errorMsg.includes('Is Ollama running')) {
+                        const installMsg = 'Ollama not detected!\n\n' +
+                            '1. Download Ollama for Windows\n' +
+                            '2. Install it\n' +
+                            '3. Run: ollama serve\n' +
+                            '4. Run: ollama pull llama3.2\n\n' +
+                            'Click OK to open Ollama download page.';
+                        
+                        if (confirm(installMsg)) {
+                            window.open('https://ollama.com/download/windows', '_blank');
+                        }
+                    } else if (errorMsg.includes('LM Studio') || errorMsg.includes('Is LM Studio running')) {
+                        const installMsg = 'LM Studio not running!\n\n' +
+                            '1. Download LM Studio\n' +
+                            '2. Load a model\n' +
+                            '3. Start the local server\n\n' +
+                            'Click OK to open LM Studio website.';
+                        
+                        if (confirm(installMsg)) {
+                            window.open('https://lmstudio.ai', '_blank');
+                        }
+                    } else {
+                        alert('Error: ' + errorMsg);
+                    }
                 }
             } catch (error) {
                 console.error('❌ AI Spinner error:', error);

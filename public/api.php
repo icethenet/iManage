@@ -1160,7 +1160,7 @@ try {
                     
                     echo json_encode([
                         'success' => false,
-                        'message' => 'AI provider not configured. Please select a provider in Admin Settings and click Save.'
+                        'message' => 'No AI provider configured. Please go to Admin > Settings > AI Integration and select a provider (Gemini is easiest - FREE with no installation required).'
                     ]);
                     break;
                 }
@@ -1250,7 +1250,7 @@ try {
                         $apiKey = $result['setting_value'] ?? '';
                         
                         if (empty($apiKey)) {
-                            throw new Exception('Gemini API key not configured');
+                            throw new Exception('Gemini API key not configured. Get a FREE key at: https://makersuite.google.com/app/apikey');
                         }
                         
                         $ch = curl_init('https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=' . $apiKey);
@@ -1284,7 +1284,7 @@ try {
                         $apiKey = $result['setting_value'] ?? '';
                         
                         if (empty($apiKey)) {
-                            throw new Exception('OpenAI API key not configured');
+                            throw new Exception('OpenAI API key not configured. Get your key at: https://platform.openai.com/api-keys');
                         }
                         
                         $ch = curl_init('https://api.openai.com/v1/chat/completions');
