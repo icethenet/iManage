@@ -1178,11 +1178,73 @@ $pageId = $_GET['id'] ?? null;
                                 '.imanage-gallery-masonry img { width: 100%; margin-bottom: 20px; border-radius: 8px; break-inside: avoid; display: block; }' +
                                 '@media (max-width: 768px) { .imanage-gallery-masonry { column-count: 2; } }' +
                                 '@media (max-width: 480px) { .imanage-gallery-masonry { column-count: 1; } }' +
-                                '.imanage-gallery-slider { position: relative; max-width: 800px; margin: 40px auto; overflow: hidden; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); }' +
-                                '.imanage-gallery-slider img { width: 100%; display: block; }' +
+                                '.imanage-gallery-slider { position: relative; max-width: 800px; margin: 40px auto; overflow: hidden; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); background: #000; }' +
+                                '.imanage-gallery-slider .slider-wrapper { position: relative; width: 100%; height: 500px; }' +
+                                '.imanage-gallery-slider .slider-slide { position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0; transition: opacity 0.5s ease-in-out; }' +
+                                '.imanage-gallery-slider .slider-slide.active { opacity: 1; }' +
+                                '.imanage-gallery-slider img { width: 100%; height: 100%; object-fit: contain; }' +
+                                '.imanage-gallery-slider .slider-btn { position: absolute; top: 50%; transform: translateY(-50%); z-index: 10; background: rgba(0,0,0,0.5); color: white; border: none; padding: 15px 20px; font-size: 24px; cursor: pointer; border-radius: 4px; transition: background 0.3s; }' +
+                                '.imanage-gallery-slider .slider-btn:hover { background: rgba(0,0,0,0.8); }' +
+                                '.imanage-gallery-slider .slider-prev { left: 20px; }' +
+                                '.imanage-gallery-slider .slider-next { right: 20px; }' +
+                                '.imanage-gallery-slider .slider-counter { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); z-index: 10; background: rgba(0,0,0,0.7); color: white; padding: 8px 16px; border-radius: 20px; font-size: 14px; }' +
                             '`;' +
                             'document.head.appendChild(style);' +
                             'console.log(\'✅ Gallery styles injected\');' +
+                        '}' +
+                        'function initSlider(container, images) {' +
+                            'let currentSlide = 0;' +
+                            'const slidesWrapper = document.createElement(\'div\');' +
+                            'slidesWrapper.className = \'slider-wrapper\';' +
+                            'slidesWrapper.style.cssText = \'position: relative; width: 100%; height: 500px;\';' +
+                            'images.forEach((asset, idx) => {' +
+                                'const slide = document.createElement(\'div\');' +
+                                'slide.className = \'slider-slide\';' +
+                                'slide.style.cssText = \'position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0; transition: opacity 0.5s ease-in-out; cursor: pointer;\';' +
+                                'if (idx === 0) slide.style.opacity = \'1\';' +
+                                'const img = document.createElement(\'img\');' +
+                                'img.src = asset.src;' +
+                                'img.alt = asset.name;' +
+                                'img.style.cssText = \'width: 100%; height: 100%; object-fit: contain;\';' +
+                                'img.onclick = function() { openLightbox(images, idx); };' +
+                                'slide.appendChild(img);' +
+                                'slidesWrapper.appendChild(slide);' +
+                            '});' +
+                            'const prevBtn = document.createElement(\'button\');' +
+                            'prevBtn.innerHTML = \'❮\';' +
+                            'prevBtn.className = \'slider-btn slider-prev\';' +
+                            'prevBtn.style.cssText = \'position: absolute; top: 50%; left: 20px; transform: translateY(-50%); z-index: 10; background: rgba(0,0,0,0.5); color: white; border: none; padding: 15px 20px; font-size: 24px; cursor: pointer; border-radius: 4px;\';' +
+                            'prevBtn.onmouseover = function() { this.style.background = \'rgba(0,0,0,0.8)\'; };' +
+                            'prevBtn.onmouseout = function() { this.style.background = \'rgba(0,0,0,0.5)\'; };' +
+                            'const nextBtn = document.createElement(\'button\');' +
+                            'nextBtn.innerHTML = \'❯\';' +
+                            'nextBtn.className = \'slider-btn slider-next\';' +
+                            'nextBtn.style.cssText = \'position: absolute; top: 50%; right: 20px; transform: translateY(-50%); z-index: 10; background: rgba(0,0,0,0.5); color: white; border: none; padding: 15px 20px; font-size: 24px; cursor: pointer; border-radius: 4px;\';' +
+                            'nextBtn.onmouseover = function() { this.style.background = \'rgba(0,0,0,0.8)\'; };' +
+                            'nextBtn.onmouseout = function() { this.style.background = \'rgba(0,0,0,0.5)\'; };' +
+                            'const counter = document.createElement(\'div\');' +
+                            'counter.className = \'slider-counter\';' +
+                            'counter.style.cssText = \'position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); z-index: 10; background: rgba(0,0,0,0.7); color: white; padding: 8px 16px; border-radius: 20px; font-size: 14px;\';' +
+                            'counter.textContent = \'1 / \' + images.length;' +
+                            'function showSlide(index) {' +
+                                'const slides = slidesWrapper.querySelectorAll(\'.slider-slide\');' +
+                                'slides.forEach((slide, i) => {' +
+                                    'slide.style.opacity = i === index ? \'1\' : \'0\';' +
+                                '});' +
+                                'counter.textContent = (index + 1) + \' / \' + images.length;' +
+                                'currentSlide = index;' +
+                            '}' +
+                            'prevBtn.onclick = function() {' +
+                                'showSlide(currentSlide > 0 ? currentSlide - 1 : images.length - 1);' +
+                            '};' +
+                            'nextBtn.onclick = function() {' +
+                                'showSlide(currentSlide < images.length - 1 ? currentSlide + 1 : 0);' +
+                            '};' +
+                            'container.appendChild(slidesWrapper);' +
+                            'container.appendChild(prevBtn);' +
+                            'container.appendChild(nextBtn);' +
+                            'container.appendChild(counter);' +
+                            'console.log(\'✅ Slider initialized with\', images.length, \'slides\');' +
                         '}' +
                         'if (document.readyState === \'loading\') {' +
                             'document.addEventListener(\'DOMContentLoaded\', loadGalleries);' +
@@ -1220,25 +1282,31 @@ $pageId = $_GET['id'] ?? null;
                                         'images = images.slice(0, maxImages);' +
                                         'const styleTag = gallery.querySelector(\'style\');' +
                                         'const styleHTML = styleTag ? styleTag.outerHTML : \'\';' +
+                                        'const isSlider = gallery.classList.contains(\'imanage-gallery-slider\');' +
                                         'gallery.innerHTML = \'\';' +
                                         'if (styleHTML) {' +
                                             'const tempDiv = document.createElement(\'div\');' +
                                             'tempDiv.innerHTML = styleHTML;' +
                                             'gallery.appendChild(tempDiv.firstChild);' +
                                         '}' +
-                                        'images.forEach((asset, idx) => {' +
-                                            'console.log(\'➕ Adding image\', idx + 1, asset.name);' +
-                                            'const img = document.createElement(\'img\');' +
-                                            'img.src = asset.src;' +
-                                            'img.alt = asset.name;' +
-                                            'img.loading = \'lazy\';' +
-                                            'img.style.cursor = \'pointer\';' +
-                                            'img.dataset.lightboxIndex = idx;' +
-                                            'img.addEventListener(\'click\', function() {' +
-                                                'openLightbox(images, idx);' +
+                                        'if (isSlider) {' +
+                                            'console.log(\'🎠 Initializing slider with\', images.length, \'images\');' +
+                                            'initSlider(gallery, images);' +
+                                        '} else {' +
+                                            'images.forEach((asset, idx) => {' +
+                                                'console.log(\'➕ Adding image\', idx + 1, asset.name);' +
+                                                'const img = document.createElement(\'img\');' +
+                                                'img.src = asset.src;' +
+                                                'img.alt = asset.name;' +
+                                                'img.loading = \'lazy\';' +
+                                                'img.style.cursor = \'pointer\';' +
+                                                'img.dataset.lightboxIndex = idx;' +
+                                                'img.addEventListener(\'click\', function() {' +
+                                                    'openLightbox(images, idx);' +
+                                                '});' +
+                                                'gallery.appendChild(img);' +
                                             '});' +
-                                            'gallery.appendChild(img);' +
-                                        '});' +
+                                        '}' +
                                         'console.log(\'✅ Gallery loaded:\', images.length, \'images\');' +
                                     '} else {' +
                                         'console.warn(\'⚠️ No images in response\');' +
