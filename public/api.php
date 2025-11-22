@@ -1037,6 +1037,7 @@ try {
 
         case 'saveopenaikey':
         case 'saveaisettings':
+            error_log("=== saveaisettings API called ===");
             requireLogin();
             
             // Check if user is admin
@@ -1052,6 +1053,7 @@ try {
             
             try {
                 $input = json_decode(file_get_contents('php://input'), true);
+                error_log("Received input: " . json_encode($input));
                 
                 // Save all AI settings
                 $settings = [
@@ -1063,7 +1065,10 @@ try {
                     'openai_api_key' => $input['api_key'] ?? $input['openaiApiKey'] ?? ''
                 ];
                 
+                error_log("Saving settings: " . json_encode($settings));
+                
                 foreach ($settings as $key => $value) {
+                    error_log("  Saving $key = $value");
                     $stmt = $db->prepare("SELECT id FROM system_settings WHERE setting_key = ?");
                     $stmt->execute([$key]);
                     $exists = $stmt->fetch();
@@ -1143,10 +1148,19 @@ try {
                 $result = $stmt->fetch(PDO::FETCH_ASSOC);
                 $provider = $result['setting_value'] ?? 'none';
                 
-                if ($provider === 'none') {
+                error_log("AI Provider detected: " . $provider);
+                
+                if ($provider === 'none' || empty($provider)) {
+                    error_log("AI Provider is none or empty. Checking all settings...");
+                    // Debug: Check what settings exist
+                    $debugStmt = $db->query("SELECT setting_key, setting_value FROM system_settings WHERE setting_key LIKE '%ai%' OR setting_key LIKE '%ollama%' OR setting_key LIKE '%gemini%'");
+                    while ($row = $debugStmt->fetch(PDO::FETCH_ASSOC)) {
+                        error_log("  - " . $row['setting_key'] . " = " . $row['setting_value']);
+                    }
+                    
                     echo json_encode([
                         'success' => false,
-                        'message' => 'AI provider not configured. Please select a provider in Admin Settings.'
+                        'message' => 'AI provider not configured. Please select a provider in Admin Settings and click Save.'
                     ]);
                     break;
                 }

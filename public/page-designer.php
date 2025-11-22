@@ -1584,6 +1584,7 @@ $pageId = $_GET['id'] ?? null;
             spinButton.disabled = true;
             
             try {
+                console.log('🤖 Sending request to spintext API...');
                 const response = await fetch('api.php?action=spintext', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -1594,17 +1595,21 @@ $pageId = $_GET['id'] ?? null;
                     })
                 });
                 
+                console.log('📥 Response status:', response.status);
                 const data = await response.json();
+                console.log('📦 Response data:', data);
                 
                 if (data.success) {
                     spunText.textContent = data.spun_text;
                     result.classList.add('active');
                     applyButton.style.display = 'flex';
+                    console.log('✅ Text spun successfully');
                 } else {
+                    console.error('❌ API Error:', data.message || data.error);
                     alert('Error: ' + (data.message || data.error || 'Failed to spin text'));
                 }
             } catch (error) {
-                console.error('AI Spinner error:', error);
+                console.error('❌ AI Spinner error:', error);
                 alert('Failed to spin text: ' + error.message);
             } finally {
                 loading.classList.remove('active');
