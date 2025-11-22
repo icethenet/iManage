@@ -459,6 +459,99 @@ $pageId = $_GET['id'] ?? null;
             attributes: { title: 'Dynamic image slider from your uploads' }
         });
         
+        // Video Gallery Grid Block
+        blockManager.add('video-gallery-grid', {
+            label: '<i class="fa fa-film"></i><div>Video Grid</div>',
+            category: 'iManage Gallery',
+            content: `
+                <div class="imanage-video-gallery-grid" data-gjs-type="imanage-video-gallery">
+                    <style>
+                        .imanage-video-gallery-grid {
+                            display: grid;
+                            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+                            gap: 20px;
+                            padding: 20px;
+                        }
+                        .imanage-video-gallery-grid video {
+                            width: 100%;
+                            height: 250px;
+                            object-fit: cover;
+                            border-radius: 8px;
+                            background: #000;
+                        }
+                        .imanage-video-gallery-grid .video-item {
+                            position: relative;
+                            border-radius: 8px;
+                            overflow: hidden;
+                            background: #000;
+                        }
+                        .imanage-video-gallery-grid .video-item:hover {
+                            transform: scale(1.02);
+                            transition: transform 0.3s;
+                        }
+                    </style>
+                    <p style="text-align: center; color: #999;">Loading your videos...</p>
+                </div>
+            `,
+            attributes: { title: 'Dynamic video gallery grid from your uploads' }
+        });
+        
+        // Video Gallery List Block
+        blockManager.add('video-gallery-list', {
+            label: '<i class="fa fa-list"></i><div>Video List</div>',
+            category: 'iManage Gallery',
+            content: `
+                <div class="imanage-video-gallery-list" data-gjs-type="imanage-video-gallery">
+                    <style>
+                        .imanage-video-gallery-list {
+                            max-width: 900px;
+                            margin: 20px auto;
+                            padding: 20px;
+                        }
+                        .imanage-video-gallery-list .video-item {
+                            margin-bottom: 30px;
+                            border-radius: 12px;
+                            overflow: hidden;
+                            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+                            background: #000;
+                        }
+                        .imanage-video-gallery-list video {
+                            width: 100%;
+                            height: auto;
+                            display: block;
+                        }
+                    </style>
+                    <p style="text-align: center; color: #999;">Loading your videos...</p>
+                </div>
+            `,
+            attributes: { title: 'Dynamic video list from your uploads' }
+        });
+        
+        // Video Gallery Featured Block
+        blockManager.add('video-gallery-featured', {
+            label: '<i class="fa fa-star"></i><div>Featured Video</div>',
+            category: 'iManage Gallery',
+            content: `
+                <div class="imanage-video-gallery-featured" data-gjs-type="imanage-video-gallery" data-max-videos="1">
+                    <style>
+                        .imanage-video-gallery-featured {
+                            max-width: 1200px;
+                            margin: 40px auto;
+                            padding: 20px;
+                        }
+                        .imanage-video-gallery-featured video {
+                            width: 100%;
+                            height: auto;
+                            border-radius: 12px;
+                            box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+                        }
+                    </style>
+                    <p style="text-align: center; color: #999; padding: 60px 20px;">Loading featured video...</p>
+                </div>
+            `,
+            attributes: { title: 'Featured video from your uploads' }
+        });
+        
         // Define custom component type for gallery
         editor.DomComponents.addType('imanage-gallery', {
             model: {
@@ -482,6 +575,54 @@ $pageId = $_GET['id'] ?? null;
                         }
                     ],
                     'script-props': ['data-folder', 'data-max-images']
+                }
+            }
+        });
+        
+        // Define custom component type for video gallery
+        editor.DomComponents.addType('imanage-video-gallery', {
+            model: {
+                defaults: {
+                    traits: [
+                        {
+                            type: 'select',
+                            label: 'Folder',
+                            name: 'data-folder',
+                            options: [
+                                { value: '', name: 'All Videos' }
+                            ]
+                        },
+                        {
+                            type: 'number',
+                            label: 'Max Videos',
+                            name: 'data-max-videos',
+                            placeholder: '10',
+                            min: 1,
+                            max: 50
+                        },
+                        {
+                            type: 'checkbox',
+                            label: 'Show Controls',
+                            name: 'data-show-controls',
+                            valueTrue: 'true',
+                            valueFalse: 'false'
+                        },
+                        {
+                            type: 'checkbox',
+                            label: 'Auto Play',
+                            name: 'data-autoplay',
+                            valueTrue: 'true',
+                            valueFalse: 'false'
+                        },
+                        {
+                            type: 'checkbox',
+                            label: 'Muted',
+                            name: 'data-muted',
+                            valueTrue: 'true',
+                            valueFalse: 'false'
+                        }
+                    ],
+                    'script-props': ['data-folder', 'data-max-videos', 'data-show-controls', 'data-autoplay', 'data-muted']
                 }
             }
         });
@@ -820,6 +961,80 @@ $pageId = $_GET['id'] ?? null;
                     html += galleryScript + lightboxCSS;
                 }
                 
+                // Add video gallery loader script if page contains imanage video galleries
+                if (html.includes('imanage-video-gallery-grid') || html.includes('imanage-video-gallery-list') || html.includes('imanage-video-gallery-featured')) {
+                    console.log('🎬 Adding video gallery script to saved HTML');
+                    const videoGalleryScript = '<script>' +
+                    '(function() {' +
+                        'console.log(\'🎬 Video gallery script started\');' +
+                        'if (document.readyState === \'loading\') {' +
+                            'document.addEventListener(\'DOMContentLoaded\', loadVideoGalleries);' +
+                        '} else {' +
+                            'loadVideoGalleries();' +
+                        '}' +
+                        'async function loadVideoGalleries() {' +
+                            'console.log(\'🔍 Looking for video galleries...\');' +
+                            'const galleries = document.querySelectorAll(\'.imanage-video-gallery-grid, .imanage-video-gallery-list, .imanage-video-gallery-featured\');' +
+                            'console.log(\'📊 Found video galleries:\', galleries.length);' +
+                            'if (galleries.length === 0) {' +
+                                'console.warn(\'⚠️ No video gallery elements found\');' +
+                                'return;' +
+                            '}' +
+                            'for (let i = 0; i < galleries.length; i++) {' +
+                                'const gallery = galleries[i];' +
+                                'console.log(\'🔍 Processing video gallery\', i + 1);' +
+                                'const folder = gallery.getAttribute(\'data-folder\') || \'\';' +
+                                'const maxVideos = parseInt(gallery.getAttribute(\'data-max-videos\')) || 10;' +
+                                'const showControls = gallery.getAttribute(\'data-show-controls\') !== \'false\';' +
+                                'const autoplay = gallery.getAttribute(\'data-autoplay\') === \'true\';' +
+                                'const muted = gallery.getAttribute(\'data-muted\') === \'true\';' +
+                                'try {' +
+                                    'console.log(\'📡 Fetching videos...\');' +
+                                    'const urlParams = new URLSearchParams(window.location.search);' +
+                                    'const token = urlParams.get(\'token\') || \'\';' +
+                                    'const response = await fetch(\'api.php?action=getpublicvideos&token=\' + token);' +
+                                    'console.log(\'📥 Response status:\', response.status);' +
+                                    'const data = await response.json();' +
+                                    'console.log(\'✅ API Response:\', data);' +
+                                    'if (data.success && data.assets) {' +
+                                        'let videos = data.assets.filter(asset => asset.type === \'video\');' +
+                                        'console.log(\'🎬 Total videos:\', videos.length);' +
+                                        'if (folder) {' +
+                                            'videos = videos.filter(asset => asset.folder === folder);' +
+                                        '}' +
+                                        'videos = videos.slice(0, maxVideos);' +
+                                        'const styleTag = gallery.querySelector(\'style\');' +
+                                        'gallery.innerHTML = styleTag ? styleTag.outerHTML : \'\';' +
+                                        'videos.forEach((asset, idx) => {' +
+                                            'console.log(\'➕ Adding video\', idx + 1, asset.name);' +
+                                            'const videoItem = document.createElement(\'div\');' +
+                                            'videoItem.className = \'video-item\';' +
+                                            'const video = document.createElement(\'video\');' +
+                                            'video.src = asset.src;' +
+                                            'if (showControls) video.controls = true;' +
+                                            'if (autoplay) video.autoplay = true;' +
+                                            'if (muted) video.muted = true;' +
+                                            'video.style.cursor = \'pointer\';' +
+                                            'videoItem.appendChild(video);' +
+                                            'gallery.appendChild(videoItem);' +
+                                        '});' +
+                                        'console.log(\'✅ Video gallery loaded:\', videos.length, \'videos\');' +
+                                    '} else {' +
+                                        'console.warn(\'⚠️ No videos in response\');' +
+                                        'gallery.innerHTML = \'<p style="text-align:center;color:orange">No videos</p>\';' +
+                                    '}' +
+                                '} catch (error) {' +
+                                    'console.error(\'❌ Error:\', error);' +
+                                    'gallery.innerHTML = \'<p style="text-align:center;color:red">Failed to load videos</p>\';' +
+                                '}' +
+                            '}' +
+                        '}' +
+                    '})();' +
+                    '<\/script>';
+                    
+                    html += videoGalleryScript;
+                }
+                
                 // Capture screenshot of the canvas
                 console.log('📸 Capturing page screenshot...');
                 let screenshotData = null;
@@ -832,11 +1047,13 @@ $pageId = $_GET['id'] ?? null;
                         logging: false
                     });
                     screenshotData = canvas.toDataURL('image/jpeg', 0.7);
-                    console.log('✅ Screenshot captured');
+                    console.log('✅ Screenshot captured, size:', (screenshotData.length / 1024).toFixed(2) + ' KB');
                 } catch (screenshotError) {
                     console.warn('⚠️ Screenshot failed:', screenshotError);
                     // Continue without screenshot
                 }
+                
+                console.log('📦 Preview data exists:', !!screenshotData);
                 
                 const payload = {
                     id: pageId,

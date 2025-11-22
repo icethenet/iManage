@@ -583,6 +583,86 @@ try {
             }
             break;
 
+        case 'getpublicvideos':
+            // Get videos for a public landing page (no authentication required)
+            try {
+                $token = $_GET['token'] ?? null;
+                
+                if (!$token) {
+                    header('Content-Type: application/json');
+                    http_response_code(400);
+                    echo json_encode(['success' => false, 'error' => 'No token provided']);
+                    break;
+                }
+                
+                $db = Database::getInstance();
+                
+                // Get user_id from landing page token
+                $stmt = $db->prepare("SELECT user_id FROM landing_pages WHERE share_token = ? AND is_active = 1");
+                $stmt->execute([$token]);
+                $page = $stmt->fetch(PDO::FETCH_ASSOC);
+                
+                if (!$page) {
+                    header('Content-Type: application/json');
+                    http_response_code(404);
+                    echo json_encode(['success' => false, 'error' => 'Page not found']);
+                    break;
+                }
+                
+                $userId = $page['user_id'];
+                
+                // Get username for path construction
+                $userStmt = $db->prepare("SELECT username FROM users WHERE id = ?");
+                $userStmt->execute([$userId]);
+                $user = $userStmt->fetch(PDO::FETCH_ASSOC);
+                $username = $user ? $user['username'] : 'unknown';
+                
+                // Get user's SHARED videos only (file_type = 'video')
+                $stmt = $db->prepare("
+                    SELECT id, filename, original_name, file_size, width, height, created_at, folder
+                    FROM images 
+                    WHERE user_id = ? AND shared = 1 AND file_type = 'video'
+                    ORDER BY created_at DESC
+                ");
+                $stmt->execute([$userId]);
+                $videos = $stmt->fetchAll(PDO::FETCH_ASSOC);
+                
+                // Format for video gallery
+                $assets = [];
+                foreach ($videos as $video) {
+                    // Construct full URL with protocol and domain
+                    $protocol = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https' : 'http';
+                    $host = $_SERVER['HTTP_HOST'];
+                    $scriptName = dirname($_SERVER['SCRIPT_NAME']);
+                    
+                    // Build path: uploads/username/folder/original/filename
+                    $folderPath = $video['folder'] ? '/' . rawurlencode($video['folder']) : '';
+                    $uploadsPath = $protocol . '://' . $host . $scriptName . '/uploads/' . $username . $folderPath . '/original/';
+                    $fullPath = $uploadsPath . $video['filename'];
+                    
+                    // Thumbnail path
+                    $thumbPath = $protocol . '://' . $host . $scriptName . '/uploads/' . $username . $folderPath . '/thumb/' . $video['filename'];
+                    
+                    $assets[] = [
+                        'id' => $video['id'],
+                        'type' => 'video',
+                        'src' => $fullPath,
+                        'thumb' => $thumbPath,
+                        'name' => $video['original_name'] ?? $video['filename'],
+                        'folder' => $video['folder'] ?? ''
+                    ];
+                }
+                
+                header('Content-Type: application/json');
+                echo json_encode(['success' => true, 'assets' => $assets, 'count' => count($assets)]);
+            } catch (Exception $e) {
+                error_log("getpublicvideos error: " . $e->getMessage());
+                header('Content-Type: application/json');
+                http_response_code(500);
+                echo json_encode(['success' => false, 'error' => $e->getMessage()]);
+            }
+            break;
+
         case 'getlandingpages':
             // Get all active landing pages for gallery display (public access)
             try {
