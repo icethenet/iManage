@@ -1035,6 +1035,161 @@ try {
             ]);
             exit;
 
+        case 'saveopenaikey':
+            requireLogin();
+            
+            // Check if user is admin
+            $db = Database::getInstance();
+            $stmt = $db->prepare("SELECT is_admin FROM users WHERE id = ?");
+            $stmt->execute([$_SESSION['user_id']]);
+            $user = $stmt->fetch(PDO::FETCH_ASSOC);
+            
+            if (!$user || !$user['is_admin']) {
+                echo json_encode(['success' => false, 'message' => 'Admin access required']);
+                break;
+            }
+            
+            try {
+                $input = json_decode(file_get_contents('php://input'), true);
+                $apiKey = $input['api_key'] ?? '';
+                
+                // Check if setting exists
+                $stmt = $db->prepare("SELECT id FROM system_settings WHERE setting_key = 'openai_api_key'");
+                $stmt->execute();
+                $exists = $stmt->fetch();
+                
+                if ($exists) {
+                    // Update
+                    $stmt = $db->prepare("UPDATE system_settings SET setting_value = ? WHERE setting_key = 'openai_api_key'");
+                    $stmt->execute([$apiKey]);
+                } else {
+                    // Insert
+                    $stmt = $db->prepare("INSERT INTO system_settings (setting_key, setting_value) VALUES ('openai_api_key', ?)");
+                    $stmt->execute([$apiKey]);
+                }
+                
+                echo json_encode(['success' => true, 'message' => 'API key saved']);
+            } catch (Exception $e) {
+                echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+            }
+            break;
+            
+        case 'getopenaikey':
+            requireLogin();
+            
+            // Check if user is admin
+            $db = Database::getInstance();
+            $stmt = $db->prepare("SELECT is_admin FROM users WHERE id = ?");
+            $stmt->execute([$_SESSION['user_id']]);
+            $user = $stmt->fetch(PDO::FETCH_ASSOC);
+            
+            if (!$user || !$user['is_admin']) {
+                echo json_encode(['success' => false, 'message' => 'Admin access required']);
+                break;
+            }
+            
+            try {
+                $stmt = $db->prepare("SELECT setting_value FROM system_settings WHERE setting_key = 'openai_api_key'");
+                $stmt->execute();
+                $result = $stmt->fetch(PDO::FETCH_ASSOC);
+                $apiKey = $result['setting_value'] ?? '';
+                
+                echo json_encode(['success' => true, 'api_key' => $apiKey]);
+            } catch (Exception $e) {
+                echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+            }
+            break;
+
+        case 'spintext':
+            requireLogin();
+            
+            try {
+                $input = json_decode(file_get_contents('php://input'), true);
+                $text = $input['text'] ?? '';
+                $tone = $input['tone'] ?? 'professional';
+                $length = $input['length'] ?? 'same';
+                
+                if (empty($text)) {
+                    echo json_encode(['success' => false, 'message' => 'Text is required']);
+                    break;
+                }
+                
+                // Check if OpenAI API key is configured
+                $db = Database::getInstance();
+                $stmt = $db->prepare("SELECT setting_value FROM system_settings WHERE setting_key = 'openai_api_key'");
+                $stmt->execute();
+                $result = $stmt->fetch(PDO::FETCH_ASSOC);
+                $apiKey = $result['setting_value'] ?? '';
+                
+                if (empty($apiKey)) {
+                    echo json_encode([
+                        'success' => false,
+                        'message' => 'OpenAI API key not configured. Please add it in Admin Settings.'
+                    ]);
+                    break;
+                }
+                
+                // Build prompt based on options
+                $lengthInstruction = match($length) {
+                    'shorter' => 'Make the rewrite shorter and more concise.',
+                    'longer' => 'Make the rewrite longer and more detailed.',
+                    default => 'Keep the rewrite approximately the same length.'
+                };
+                
+                $prompt = "Rewrite the following text in a {$tone} tone. {$lengthInstruction}\n\n" .
+                          "Original text: {$text}\n\n" .
+                          "Rewritten text:";
+                
+                // Call OpenAI API
+                $ch = curl_init('https://api.openai.com/v1/chat/completions');
+                curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+                curl_setopt($ch, CURLOPT_POST, true);
+                curl_setopt($ch, CURLOPT_HTTPHEADER, [
+                    'Content-Type: application/json',
+                    'Authorization: Bearer ' . $apiKey
+                ]);
+                curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode([
+                    'model' => 'gpt-3.5-turbo',
+                    'messages' => [
+                        ['role' => 'system', 'content' => 'You are a professional copywriter and content editor.'],
+                        ['role' => 'user', 'content' => $prompt]
+                    ],
+                    'temperature' => 0.7,
+                    'max_tokens' => 1000
+                ]));
+                
+                $response = curl_exec($ch);
+                $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+                curl_close($ch);
+                
+                if ($httpCode !== 200) {
+                    error_log("OpenAI API error: HTTP $httpCode - $response");
+                    echo json_encode([
+                        'success' => false,
+                        'message' => 'OpenAI API error. Please check your API key and try again.'
+                    ]);
+                    break;
+                }
+                
+                $data = json_decode($response, true);
+                $spunText = $data['choices'][0]['message']['content'] ?? '';
+                
+                if (empty($spunText)) {
+                    echo json_encode(['success' => false, 'message' => 'No response from AI']);
+                    break;
+                }
+                
+                echo json_encode([
+                    'success' => true,
+                    'spun_text' => trim($spunText)
+                ]);
+                
+            } catch (Exception $e) {
+                error_log("spintext error: " . $e->getMessage());
+                echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+            }
+            break;
+
         default:
             http_response_code(400);
             header('Content-Type: application/json');

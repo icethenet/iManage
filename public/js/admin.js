@@ -46,6 +46,8 @@ function switchAdminTab(tabName) {
         loadSettings();
     } else if (tabName === 'logs') {
         loadActivityLog();
+    } else if (tabName === 'settings' && typeof loadOpenAIKey === 'function') {
+        loadOpenAIKey();
     }
 }
 
@@ -339,6 +341,9 @@ function saveSystemSettings() {
         imagesPerPage: document.getElementById('imagesPerPage').value,
         enableLazyLoad: document.getElementById('enableLazyLoad').checked,
         
+        // AI Integration
+        openaiApiKey: document.getElementById('openaiApiKey')?.value || '',
+        
         // Email Configuration
         enableEmail: document.getElementById('enableEmail').checked,
         smtpHost: document.getElementById('smtpHost').value,
@@ -368,9 +373,22 @@ function saveSystemSettings() {
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            alert('✓ Settings saved successfully!');
+            // Also save OpenAI API key to database
+            if (settings.openaiApiKey) {
+                return fetch('api.php?action=saveopenaikey', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ api_key: settings.openaiApiKey })
+                });
+            }
+            return { ok: true };
         } else {
-            alert('✗ Failed to save settings: ' + (data.error || 'Unknown error'));
+            throw new Error(data.error || 'Unknown error');
+        }
+    })
+    .then(response => {
+        if (response.ok || response.success !== false) {
+            alert('✓ Settings saved successfully!');
         }
     })
     .catch(error => {
@@ -379,6 +397,21 @@ function saveSystemSettings() {
         localStorage.setItem('systemSettings', JSON.stringify(settings));
         alert('✓ Settings saved locally!\n\n(Note: Backend implementation pending)');
     });
+}
+
+// Load OpenAI API key on settings tab load
+function loadOpenAIKey() {
+    fetch('api.php?action=getopenaikey')
+        .then(r => r.json())
+        .then(data => {
+            if (data.success && data.api_key) {
+                const input = document.getElementById('openaiApiKey');
+                if (input) {
+                    input.value = data.api_key;
+                }
+            }
+        })
+        .catch(e => console.error('Failed to load OpenAI key:', e));
 }
 
 // Reset system settings to defaults

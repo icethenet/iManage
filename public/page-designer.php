@@ -173,9 +173,269 @@ $pageId = $_GET['id'] ?? null;
             left: 0 !important;
             right: 0 !important;
         }
+        
+        /* AI Text Spinner Modal */
+        .ai-spinner-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 10000;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .ai-spinner-modal.active {
+            display: flex;
+        }
+        
+        .ai-spinner-content {
+            background: #2c2c2c;
+            border-radius: 8px;
+            padding: 25px;
+            max-width: 600px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+        
+        .ai-spinner-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            color: #fff;
+        }
+        
+        .ai-spinner-header h2 {
+            margin: 0;
+            font-size: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .ai-spinner-close {
+            background: none;
+            border: none;
+            color: #fff;
+            font-size: 24px;
+            cursor: pointer;
+            padding: 0;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 4px;
+        }
+        
+        .ai-spinner-close:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+        
+        .ai-spinner-section {
+            margin-bottom: 20px;
+        }
+        
+        .ai-spinner-section label {
+            display: block;
+            color: #ddd;
+            margin-bottom: 8px;
+            font-size: 14px;
+            font-weight: 500;
+        }
+        
+        .ai-spinner-section textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #555;
+            background: #1a1a1a;
+            color: #fff;
+            border-radius: 4px;
+            font-family: inherit;
+            font-size: 14px;
+            min-height: 100px;
+            resize: vertical;
+        }
+        
+        .ai-spinner-section select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #555;
+            background: #1a1a1a;
+            color: #fff;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        
+        .ai-spinner-options {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+        
+        .ai-spinner-actions {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+            margin-top: 20px;
+        }
+        
+        .ai-spinner-btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            font-size: 14px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s;
+        }
+        
+        .ai-spinner-btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        
+        .ai-spinner-btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+        
+        .ai-spinner-btn-primary:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .ai-spinner-btn-secondary {
+            background: #444;
+            color: #fff;
+        }
+        
+        .ai-spinner-btn-secondary:hover {
+            background: #555;
+        }
+        
+        .ai-spinner-result {
+            margin-top: 20px;
+            padding: 15px;
+            background: #1a1a1a;
+            border: 1px solid #555;
+            border-radius: 4px;
+            color: #fff;
+            display: none;
+        }
+        
+        .ai-spinner-result.active {
+            display: block;
+        }
+        
+        .ai-spinner-result-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        
+        .ai-spinner-result-text {
+            line-height: 1.6;
+            white-space: pre-wrap;
+        }
+        
+        .ai-spinner-loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+            color: #667eea;
+        }
+        
+        .ai-spinner-loading.active {
+            display: block;
+        }
+        
+        .ai-spinner-loading i {
+            font-size: 24px;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
     </style>
 </head>
 <body>
+    <!-- AI Text Spinner Modal -->
+    <div id="aiSpinnerModal" class="ai-spinner-modal">
+        <div class="ai-spinner-content">
+            <div class="ai-spinner-header">
+                <h2><i class="fa fa-magic"></i> AI Text Spinner</h2>
+                <button class="ai-spinner-close" onclick="closeAISpinner()">&times;</button>
+            </div>
+            
+            <div class="ai-spinner-section">
+                <label for="originalText">Original Text</label>
+                <textarea id="originalText" placeholder="Paste or type your text here..."></textarea>
+            </div>
+            
+            <div class="ai-spinner-options">
+                <div class="ai-spinner-section">
+                    <label for="spinTone">Tone</label>
+                    <select id="spinTone">
+                        <option value="professional">Professional</option>
+                        <option value="casual">Casual</option>
+                        <option value="friendly">Friendly</option>
+                        <option value="formal">Formal</option>
+                        <option value="persuasive">Persuasive</option>
+                        <option value="informative">Informative</option>
+                    </select>
+                </div>
+                
+                <div class="ai-spinner-section">
+                    <label for="spinLength">Length</label>
+                    <select id="spinLength">
+                        <option value="same">Same Length</option>
+                        <option value="shorter">Shorter</option>
+                        <option value="longer">Longer</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="ai-spinner-loading" id="aiSpinnerLoading">
+                <i class="fa fa-spinner"></i>
+                <p>Generating variations...</p>
+            </div>
+            
+            <div class="ai-spinner-result" id="aiSpinnerResult">
+                <div class="ai-spinner-result-header">
+                    <strong>Rewritten Text:</strong>
+                    <button class="ai-spinner-btn ai-spinner-btn-secondary" onclick="copySpunText()">
+                        <i class="fa fa-copy"></i> Copy
+                    </button>
+                </div>
+                <div class="ai-spinner-result-text" id="spunText"></div>
+            </div>
+            
+            <div class="ai-spinner-actions">
+                <button class="ai-spinner-btn ai-spinner-btn-secondary" onclick="closeAISpinner()">Cancel</button>
+                <button class="ai-spinner-btn ai-spinner-btn-primary" onclick="spinText()" id="spinButton">
+                    <i class="fa fa-magic"></i> Spin Text
+                </button>
+                <button class="ai-spinner-btn ai-spinner-btn-primary" onclick="applySpunText()" id="applyButton" style="display: none;">
+                    <i class="fa fa-check"></i> Apply to Page
+                </button>
+            </div>
+        </div>
+    </div>
+    
+
     <div class="panel__top">
         <div class="panel__basic-actions"></div>
         <div class="panel__devices"></div>
@@ -374,6 +634,12 @@ $pageId = $_GET['id'] ?? null;
                 command: 'open-assets',
                 attributes: { title: 'My Gallery Images' }
             }, {
+                id: 'ai-text-spinner',
+                className: 'btn-ai-spinner',
+                label: '<i class="fa fa-magic"></i>',
+                command: 'open-ai-spinner',
+                attributes: { title: 'AI Text Spinner' }
+            }, {
                 id: 'save-db',
                 className: 'btn-save',
                 label: '<i class="fa fa-floppy-o"></i>',
@@ -398,6 +664,24 @@ $pageId = $_GET['id'] ?? null;
         });
         commands.add('set-device-mobile', {
             run: editor => editor.setDevice('Mobile portrait')
+        });
+        
+        commands.add('open-ai-spinner', {
+            run: function() {
+                openAISpinner();
+            }
+        });
+        
+        commands.add('save-db', {
+            run: function() {
+                savePage();
+            }
+        });
+        
+        commands.add('exit-editor', {
+            run: function() {
+                exitEditor();
+            }
         });
         
         // Add custom gallery blocks
@@ -1151,6 +1435,115 @@ $pageId = $_GET['id'] ?? null;
                 window.location.href = 'index.php';
             }
         }
+        
+        // AI Text Spinner Functions
+        let selectedComponent = null;
+        
+        function openAISpinner() {
+            const modal = document.getElementById('aiSpinnerModal');
+            const originalText = document.getElementById('originalText');
+            const result = document.getElementById('aiSpinnerResult');
+            const applyButton = document.getElementById('applyButton');
+            
+            // Get selected component
+            selectedComponent = editor.getSelected();
+            
+            // Try to get text from selected component
+            if (selectedComponent) {
+                const content = selectedComponent.view.el.textContent || '';
+                originalText.value = content.trim();
+            } else {
+                originalText.value = '';
+            }
+            
+            // Reset result
+            result.classList.remove('active');
+            applyButton.style.display = 'none';
+            
+            modal.classList.add('active');
+        }
+        
+        function closeAISpinner() {
+            const modal = document.getElementById('aiSpinnerModal');
+            modal.classList.remove('active');
+        }
+        
+        async function spinText() {
+            const originalText = document.getElementById('originalText').value.trim();
+            const tone = document.getElementById('spinTone').value;
+            const length = document.getElementById('spinLength').value;
+            const loading = document.getElementById('aiSpinnerLoading');
+            const result = document.getElementById('aiSpinnerResult');
+            const spinButton = document.getElementById('spinButton');
+            const applyButton = document.getElementById('applyButton');
+            const spunText = document.getElementById('spunText');
+            
+            if (!originalText) {
+                alert('Please enter some text to spin');
+                return;
+            }
+            
+            // Show loading
+            loading.classList.add('active');
+            result.classList.remove('active');
+            spinButton.disabled = true;
+            
+            try {
+                const response = await fetch('api.php?action=spintext', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        text: originalText,
+                        tone: tone,
+                        length: length
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    spunText.textContent = data.spun_text;
+                    result.classList.add('active');
+                    applyButton.style.display = 'flex';
+                } else {
+                    alert('Error: ' + (data.message || data.error || 'Failed to spin text'));
+                }
+            } catch (error) {
+                console.error('AI Spinner error:', error);
+                alert('Failed to spin text: ' + error.message);
+            } finally {
+                loading.classList.remove('active');
+                spinButton.disabled = false;
+            }
+        }
+        
+        function copySpunText() {
+            const spunText = document.getElementById('spunText').textContent;
+            navigator.clipboard.writeText(spunText).then(() => {
+                alert('✅ Text copied to clipboard!');
+            });
+        }
+        
+        function applySpunText() {
+            const spunText = document.getElementById('spunText').textContent;
+            
+            if (selectedComponent) {
+                // Update the selected component's content
+                selectedComponent.components(spunText);
+                alert('✅ Text applied to selected element!');
+                closeAISpinner();
+            } else {
+                // If no component selected, just copy to clipboard
+                copySpunText();
+            }
+        }
+        
+        // Close modal on outside click
+        document.getElementById('aiSpinnerModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeAISpinner();
+            }
+        });
     </script>
 </body>
 </html>

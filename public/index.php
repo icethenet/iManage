@@ -1286,6 +1286,18 @@
                             </div>
                         </div>
 
+                        <!-- AI Integration Settings -->
+                        <div class="settings-category">
+                            <h4>🤖 AI Integration</h4>
+                            <div class="settings-grid">
+                                <div class="setting-item" style="grid-column: 1 / -1;">
+                                    <label for="openaiApiKey">OpenAI API Key</label>
+                                    <input type="password" id="openaiApiKey" placeholder="sk-..." style="width: 100%;">
+                                    <small style="display: block; margin-top: 5px; color: #666;">Required for AI Text Spinner in Page Designer. Get your key from <a href="https://platform.openai.com/api-keys" target="_blank">OpenAI Platform</a></small>
+                                </div>
+                            </div>
+                        </div>
+                        
                         <!-- Email Settings -->
                         <div class="settings-category">
                             <h4>📧 Email Configuration</h4>
