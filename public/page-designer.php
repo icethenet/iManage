@@ -1166,6 +1166,24 @@ $pageId = $_GET['id'] ?? null;
                     const galleryScript = '<script>' +
                     '(function() {' +
                         'console.log(\'🖼️ Gallery script started\');' +
+                        'function ensureGalleryStyles() {' +
+                            'if (document.getElementById(\'imanage-gallery-styles\')) return;' +
+                            'const style = document.createElement(\'style\');' +
+                            'style.id = \'imanage-gallery-styles\';' +
+                            'style.textContent = `' +
+                                '.imanage-gallery-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 20px; padding: 20px; }' +
+                                '.imanage-gallery-grid img { width: 100%; height: 250px; object-fit: cover; border-radius: 8px; transition: transform 0.3s; }' +
+                                '.imanage-gallery-grid img:hover { transform: scale(1.05); }' +
+                                '.imanage-gallery-masonry { column-count: 3; column-gap: 20px; padding: 20px; }' +
+                                '.imanage-gallery-masonry img { width: 100%; margin-bottom: 20px; border-radius: 8px; break-inside: avoid; display: block; }' +
+                                '@media (max-width: 768px) { .imanage-gallery-masonry { column-count: 2; } }' +
+                                '@media (max-width: 480px) { .imanage-gallery-masonry { column-count: 1; } }' +
+                                '.imanage-gallery-slider { position: relative; max-width: 800px; margin: 40px auto; overflow: hidden; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); }' +
+                                '.imanage-gallery-slider img { width: 100%; display: block; }' +
+                            '`;' +
+                            'document.head.appendChild(style);' +
+                            'console.log(\'✅ Gallery styles injected\');' +
+                        '}' +
                         'if (document.readyState === \'loading\') {' +
                             'document.addEventListener(\'DOMContentLoaded\', loadGalleries);' +
                         '} else {' +
@@ -1179,6 +1197,7 @@ $pageId = $_GET['id'] ?? null;
                                 'console.warn(\'⚠️ No gallery elements found\');' +
                                 'return;' +
                             '}' +
+                            'ensureGalleryStyles();' +
                             'for (let i = 0; i < galleries.length; i++) {' +
                                 'const gallery = galleries[i];' +
                                 'console.log(\'🔍 Processing gallery\', i + 1);' +
@@ -1200,7 +1219,13 @@ $pageId = $_GET['id'] ?? null;
                                         '}' +
                                         'images = images.slice(0, maxImages);' +
                                         'const styleTag = gallery.querySelector(\'style\');' +
-                                        'gallery.innerHTML = styleTag ? styleTag.outerHTML : \'\';' +
+                                        'const styleHTML = styleTag ? styleTag.outerHTML : \'\';' +
+                                        'gallery.innerHTML = \'\';' +
+                                        'if (styleHTML) {' +
+                                            'const tempDiv = document.createElement(\'div\');' +
+                                            'tempDiv.innerHTML = styleHTML;' +
+                                            'gallery.appendChild(tempDiv.firstChild);' +
+                                        '}' +
                                         'images.forEach((asset, idx) => {' +
                                             'console.log(\'➕ Adding image\', idx + 1, asset.name);' +
                                             'const img = document.createElement(\'img\');' +
