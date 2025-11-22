@@ -409,20 +409,26 @@ function loadOpenAIKey() {
                 if (providerSelect && data.provider) {
                     console.log('Setting provider to:', data.provider);
                     providerSelect.value = data.provider;
-                    toggleAIProviderSettings();
+                    
+                    // Show the appropriate settings section
+                    setTimeout(() => {
+                        toggleAIProviderSettings();
+                    }, 100);
                 }
                 
                 // Load provider-specific settings
-                if (data.provider === 'ollama') {
-                    if (data.ollama_endpoint) document.getElementById('ollamaEndpoint').value = data.ollama_endpoint;
-                    if (data.ollama_model) document.getElementById('ollamaModel').value = data.ollama_model;
-                } else if (data.provider === 'lmstudio') {
-                    if (data.lmstudio_endpoint) document.getElementById('lmstudioEndpoint').value = data.lmstudio_endpoint;
-                } else if (data.provider === 'gemini') {
-                    if (data.gemini_api_key) document.getElementById('geminiApiKey').value = data.gemini_api_key;
-                } else if (data.provider === 'openai') {
-                    if (data.openai_api_key) document.getElementById('openaiApiKey').value = data.openai_api_key;
-                }
+                setTimeout(() => {
+                    if (data.provider === 'ollama') {
+                        if (data.ollama_endpoint) document.getElementById('ollamaEndpoint').value = data.ollama_endpoint;
+                        if (data.ollama_model) document.getElementById('ollamaModel').value = data.ollama_model;
+                    } else if (data.provider === 'lmstudio') {
+                        if (data.lmstudio_endpoint) document.getElementById('lmstudioEndpoint').value = data.lmstudio_endpoint;
+                    } else if (data.provider === 'gemini') {
+                        if (data.gemini_api_key) document.getElementById('geminiApiKey').value = data.gemini_api_key;
+                    } else if (data.provider === 'openai') {
+                        if (data.openai_api_key) document.getElementById('openaiApiKey').value = data.openai_api_key;
+                    }
+                }, 150);
             }
         })
         .catch(e => console.error('Failed to load AI settings:', e));

@@ -1346,6 +1346,29 @@
                                     </div>
                                 </div>
                             </div>
+                            <script>
+                            // Ensure toggleAIProviderSettings is available globally
+                            if (typeof toggleAIProviderSettings !== 'function') {
+                                window.toggleAIProviderSettings = function() {
+                                    const provider = document.getElementById('aiProvider')?.value;
+                                    if (!provider) return;
+                                    
+                                    // Hide all provider settings
+                                    document.querySelectorAll('.ai-provider-settings').forEach(el => {
+                                        el.style.display = 'none';
+                                    });
+                                    
+                                    // Show selected provider settings
+                                    if (provider && provider !== 'none') {
+                                        const settingsDiv = document.getElementById('aiSettings' + provider.charAt(0).toUpperCase() + provider.slice(1));
+                                        if (settingsDiv) {
+                                            settingsDiv.style.display = 'block';
+                                            console.log('Showing settings for:', provider);
+                                        }
+                                    }
+                                };
+                            }
+                            </script>
                         </div>
                         
                         <!-- Email Settings -->
