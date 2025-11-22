@@ -1,20 +1,9 @@
 /**
- * Comprehensive AI Features Module
- * Combines multiple free AI capabilities:
+ * AI Features Module
+ * Provides AI capabilities for image analysis:
  * 1. Color Palette Extraction (Vibrant.js)
- * 2. Face Detection (face-api.js)
- * 3. OCR Text Recognition (Tesseract.js)
- * 4. NSFW Content Filter (NSFWJS)
- * 5. Object Detection (COCO-SSD)
+ * 2. OCR Text Recognition (Tesseract.js)
  */
-
-// Model loading states
-let cocoSsdModel = null;
-let faceApiModelsLoaded = false;
-let nsfwModel = null;
-let isLoadingCoco = false;
-let isLoadingFaceApi = false;
-let isLoadingNsfw = false;
 
 /**
  * 1. COLOR PALETTE EXTRACTION
@@ -22,19 +11,35 @@ let isLoadingNsfw = false;
  */
 async function extractColorPalette(imageSource) {
     try {
-        console.log('🎨 Extracting color palette...');
         
-        let imgUrl;
-        if (imageSource instanceof File) {
-            imgUrl = URL.createObjectURL(imageSource);
+        // ALWAYS create a fresh image element through the proxy to avoid CORS taint
+        let imgElement;
+        
+        if (imageSource instanceof HTMLImageElement) {
+            // Extract the src and create a fresh element through proxy
+            console.log('Creating fresh element from image src to avoid CORS taint');
+            imgElement = await createImageElementForAnalysis(imageSource.src);
+        } else if (imageSource instanceof File) {
+            console.log('Creating element from File');
+            imgElement = await createImageElementForAnalysis(imageSource);
         } else if (typeof imageSource === 'string') {
-            imgUrl = imageSource;
+            console.log('Creating element from URL');
+            imgElement = await createImageElementForAnalysis(imageSource);
         } else {
-            imgUrl = imageSource.src;
+            throw new Error('Unsupported image source type');
         }
         
-        const vibrant = new Vibrant(imgUrl);
+        
+        // Check if Vibrant is available
+        if (typeof Vibrant === 'undefined') {
+            throw new Error('Vibrant.js library not loaded');
+        }
+        
+        console.log('Creating Vibrant instance...');
+        const vibrant = new Vibrant(imgElement);
+        console.log('Calling getPalette...');
         const palette = await vibrant.getPalette();
+        console.log('Palette received:', palette);
         
         const colors = {
             vibrant: palette.Vibrant?.hex || null,
@@ -45,117 +50,85 @@ async function extractColorPalette(imageSource) {
             lightMuted: palette.LightMuted?.hex || null
         };
         
-        // Clean up object URL if we created one
-        if (imageSource instanceof File) {
-            URL.revokeObjectURL(imgUrl);
-        }
-        
-        console.log('✅ Color palette extracted:', colors);
         return colors;
     } catch (error) {
         console.error('❌ Color palette extraction failed:', error);
+        console.error('Error details:', error.message);
+        console.error('Stack:', error.stack);
         return null;
     }
 }
 
 /**
- * 2. FACE DETECTION
- * Detect faces and facial landmarks
+ * Helper to create image element for analysis
+ * Uses proxy for same-origin /uploads/ images
  */
-async function loadFaceApiModels() {
-    if (faceApiModelsLoaded) return true;
-    if (isLoadingFaceApi) {
-        while (isLoadingFaceApi) {
-            await new Promise(resolve => setTimeout(resolve, 100));
-        }
-        return faceApiModelsLoaded;
-    }
-    
-    try {
-        isLoadingFaceApi = true;
-        console.log('👤 Loading face detection models...');
-        
-        const MODEL_URL = 'https://cdn.jsdelivr.net/npm/@vladmandic/face-api@1.7.12/model';
-        await Promise.all([
-            faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL),
-            faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL),
-            faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL),
-            faceapi.nets.faceExpressionNet.loadFromUri(MODEL_URL),
-            faceapi.nets.ageGenderNet.loadFromUri(MODEL_URL)
-        ]);
-        
-        faceApiModelsLoaded = true;
-        console.log('✅ Face detection models loaded');
-        return true;
-    } catch (error) {
-        console.error('❌ Failed to load face detection models:', error);
-        return false;
-    } finally {
-        isLoadingFaceApi = false;
-    }
-}
-
-async function detectFaces(imageSource) {
-    try {
-        const loaded = await loadFaceApiModels();
-        if (!loaded) {
-            console.warn('Face detection models not available');
-            return null;
-        }
-        
-        let imgElement;
-        if (imageSource instanceof File) {
-            imgElement = await createImageElementFromFile(imageSource);
-        } else if (typeof imageSource === 'string') {
-            imgElement = await createImageElementFromUrl(imageSource);
-        } else {
-            imgElement = imageSource;
-        }
-        
-        console.log('👤 Detecting faces...');
-        const detections = await faceapi
-            .detectAllFaces(imgElement, new faceapi.TinyFaceDetectorOptions())
-            .withFaceLandmarks()
-            .withFaceExpressions()
-            .withAgeAndGender();
-        
-        const result = {
-            faceCount: detections.length,
-            faces: detections.map(d => ({
-                box: d.detection.box,
-                expressions: d.expressions,
-                age: Math.round(d.age),
-                gender: d.gender,
-                genderProbability: d.genderProbability
-            }))
-        };
-        
-        console.log(`✅ Detected ${result.faceCount} face(s)`);
-        return result;
-    } catch (error) {
-        console.error('❌ Face detection failed:', error);
-        return null;
+async function createImageElementForAnalysis(source) {
+    if (source instanceof File) {
+        // File object - use blob URL
+        return new Promise((resolve, reject) => {
+            const img = new Image();
+            const url = URL.createObjectURL(source);
+            img.onload = () => {
+                URL.revokeObjectURL(url);
+                resolve(img);
+            };
+            img.onerror = () => {
+                URL.revokeObjectURL(url);
+                reject(new Error('Failed to load image from file'));
+            };
+            img.src = url;
+        });
+    } else if (typeof source === 'string') {
+        // URL string - check if it needs proxy
+        return new Promise((resolve, reject) => {
+            const img = new Image();
+            
+            // Check if it's an /uploads/ image that needs proxy
+            const uploadsPattern = /\/uploads\/(.+)/;
+            const match = source.match(uploadsPattern);
+            
+            if (match && match[1]) {
+                // Use proxy for authentication
+                const path = match[1];
+                img.src = 'image-proxy.php?path=' + path;
+                console.log('Using proxy for color extraction:', img.src);
+            } else {
+                // External image - use CORS
+                img.crossOrigin = 'anonymous';
+                img.src = source;
+            }
+            
+            img.onload = () => resolve(img);
+            img.onerror = () => reject(new Error('Failed to load image from URL'));
+        });
+    } else {
+        throw new Error('Invalid source type for image analysis');
     }
 }
 
 /**
- * 3. OCR TEXT RECOGNITION
+ * 2. OCR TEXT RECOGNITION
  * Extract text from images
  */
 async function extractText(imageSource) {
     try {
-        console.log('📝 Extracting text from image...');
         
-        let imgSource;
-        if (imageSource instanceof File) {
-            imgSource = imageSource;
+        // Create fresh image element through proxy for consistent CORS handling
+        let imgElement;
+        if (imageSource instanceof HTMLImageElement) {
+            console.log('OCR: Creating fresh element to avoid CORS');
+            imgElement = await createImageElementForAnalysis(imageSource.src);
+        } else if (imageSource instanceof File) {
+            imgElement = await createImageElementForAnalysis(imageSource);
         } else if (typeof imageSource === 'string') {
-            imgSource = imageSource;
+            imgElement = await createImageElementForAnalysis(imageSource);
         } else {
-            imgSource = imageSource.src;
+            throw new Error('Unsupported image source type');
         }
         
-        const result = await Tesseract.recognize(imgSource, 'eng', {
+        // Tesseract can work with image elements directly
+        const result = await Tesseract.recognize(imgElement, 'eng', {
             logger: m => {
                 if (m.status === 'recognizing text') {
                     console.log(`OCR Progress: ${Math.round(m.progress * 100)}%`);
@@ -164,7 +137,6 @@ async function extractText(imageSource) {
         });
         
         const text = result.data.text.trim();
-        console.log(`✅ Extracted ${text.length} characters`);
         
         return {
             text: text,
@@ -178,118 +150,7 @@ async function extractText(imageSource) {
 }
 
 /**
- * 4. NSFW CONTENT FILTERING
- * Detect inappropriate content
- */
-async function loadNsfwModel() {
-    if (nsfwModel) return nsfwModel;
-    if (isLoadingNsfw) {
-        while (isLoadingNsfw) {
-            await new Promise(resolve => setTimeout(resolve, 100));
-        }
-        return nsfwModel;
-    }
-    
-    try {
-        isLoadingNsfw = true;
-        console.log('🔞 Loading NSFW detection model...');
-        nsfwModel = await nsfwjs.load();
-        console.log('✅ NSFW model loaded');
-        return nsfwModel;
-    } catch (error) {
-        console.error('❌ Failed to load NSFW model:', error);
-        return null;
-    } finally {
-        isLoadingNsfw = false;
-    }
-}
-
-async function checkNsfwContent(imageSource) {
-    try {
-        const model = await loadNsfwModel();
-        if (!model) {
-            console.warn('NSFW model not available');
-            return null;
-        }
-        
-        let imgElement;
-        if (imageSource instanceof File) {
-            imgElement = await createImageElementFromFile(imageSource);
-        } else if (typeof imageSource === 'string') {
-            imgElement = await createImageElementFromUrl(imageSource);
-        } else {
-            imgElement = imageSource;
-        }
-        
-        console.log('🔞 Checking content safety...');
-        const predictions = await model.classify(imgElement);
-        
-        // Categories: Porn, Sexy, Hentai, Neutral, Drawing
-        const result = {
-            predictions: predictions,
-            isNsfw: predictions.some(p => 
-                (p.className === 'Porn' || p.className === 'Hentai') && p.probability > 0.5
-            ),
-            isSexy: predictions.find(p => p.className === 'Sexy')?.probability > 0.6,
-            safetyScore: predictions.find(p => p.className === 'Neutral')?.probability || 0
-        };
-        
-        console.log('✅ Content check complete:', result.isNsfw ? '⚠️ NSFW' : '✅ Safe');
-        return result;
-    } catch (error) {
-        console.error('❌ NSFW check failed:', error);
-        return null;
-    }
-}
-
-/**
- * 5. OBJECT DETECTION
- * Detect objects and their locations
- */
-async function loadCocoSsd() {
-    if (cocoSsdModel) return cocoSsdModel;
-    if (isLoadingCoco) {
-        while (isLoadingCoco) {
-            await new Promise(resolve => setTimeout(resolve, 100));
-        }
-        return cocoSsdModel;
-    }
-    
-    try {
-        isLoadingCoco = true;
-        console.log('🎯 Loading object detection model...');
-        cocoSsdModel = await cocoSsd.load();
-        console.log('✅ Object detection model loaded');
-        return cocoSsdModel;
-    } catch (error) {
-        console.error('❌ Failed to load object detection model:', error);
-        return null;
-    } finally {
-        isLoadingCoco = false;
-    }
-}
-
-async function detectObjects(imageSource) {
-    try {
-        const model = await loadCocoSsd();
-        if (!model) {
-            console.warn('Object detection model not available');
-            return null;
-        }
-        
-        let imgElement;
-        if (imageSource instanceof File) {
-            imgElement = await createImageElementFromFile(imageSource);
-        } else if (typeof imageSource === 'string') {
-            imgElement = await createImageElementFromUrl(imageSource);
-        } else {
-            imgElement = imageSource;
-        }
-        
-        console.log('🎯 Detecting objects...');
-        const predictions = await model.detect(imgElement);
-        
-        const result = {
+ * 3. COMPREHENSIVE IMAGE ANALYSIS
             objectCount: predictions.length,
             objects: predictions.map(p => ({
                 class: p.class,
@@ -309,27 +170,11 @@ async function detectObjects(imageSource) {
 /**
  * HELPER FUNCTIONS
  */
-function createImageElementFromFile(file) {
-    return new Promise((resolve, reject) => {
-        const img = new Image();
-        img.onload = () => {
-            URL.revokeObjectURL(img.src);
-            resolve(img);
-        };
-        img.onerror = reject;
-        img.src = URL.createObjectURL(file);
-    });
-}
+// Use the implementations from ai-tagging.js
+// Don't duplicate image loading logic - it causes bugs!
 
-function createImageElementFromUrl(url) {
-    return new Promise((resolve, reject) => {
-        const img = new Image();
-        img.crossOrigin = 'anonymous';
-        img.onload = () => resolve(img);
-        img.onerror = reject;
-        img.src = url;
-    });
-}
+// REMOVED - Use the proper implementation from ai-tagging.js instead
+// This was causing CORS errors and not using the proxy!
 
 /**
  * COMPREHENSIVE ANALYSIS
@@ -344,7 +189,7 @@ async function analyzeImageComprehensive(imageSource) {
     };
     
     // Run all analyses in parallel
-    const [tags, colors, faces, text, nsfw, objects] = await Promise.all([
+    const [tags, colors, text] = await Promise.all([
         window.AITagging?.generateImageTags?.(imageSource).catch(e => {
             console.warn('Tagging skipped:', e);
             return null;
@@ -353,29 +198,22 @@ async function analyzeImageComprehensive(imageSource) {
             console.warn('Color extraction skipped:', e);
             return null;
         }),
-        detectFaces(imageSource).catch(e => {
-            console.warn('Face detection skipped:', e);
-            return null;
-        }),
         extractText(imageSource).catch(e => {
             console.warn('OCR skipped:', e);
-            return null;
-        }),
-        checkNsfwContent(imageSource).catch(e => {
-            console.warn('NSFW check skipped:', e);
-            return null;
-        }),
-        detectObjects(imageSource).catch(e => {
-            console.warn('Object detection skipped:', e);
             return null;
         })
     ]);
     
-    results.analyses = { tags, colors, faces, text, nsfw, objects };
+    // Store results
+    if (tags) results.analyses.tags = tags;
+    if (colors) results.analyses.colors = colors;
+    if (text) results.analyses.text = text;
     
-    console.log('✅ Comprehensive analysis complete:', results);
     return results;
 }
+
+// === UI FUNCTIONS ===
+// These handle the button clicks and display results
 
 /**
  * UI INTEGRATION
@@ -419,15 +257,11 @@ function createAIButtonsUI(modalToolsDiv) {
     aiContainer.appendChild(title);
     
     const buttonGrid = document.createElement('div');
-    buttonGrid.style.cssText = 'display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;';
+    buttonGrid.style.cssText = 'display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px;';
     
     const buttons = [
-        { id: 'ai-tags', icon: '🏷️', label: 'Auto Tags', action: generateTags },
         { id: 'ai-colors', icon: '🎨', label: 'Colors', action: showColors },
-        { id: 'ai-faces', icon: '👤', label: 'Faces', action: showFaces },
-        { id: 'ai-text', icon: '📝', label: 'OCR', action: showText },
-        { id: 'ai-nsfw', icon: '🔞', label: 'Safety', action: showSafety },
-        { id: 'ai-objects', icon: '🎯', label: 'Objects', action: showObjects }
+        { id: 'ai-text', icon: '📝', label: 'OCR', action: showText }
     ];
     
     buttons.forEach(btn => {
@@ -481,88 +315,40 @@ function createAIButtonsUI(modalToolsDiv) {
 }
 
 // Button action handlers
-async function generateTags() {
-    showAILoading('Generating tags...');
+async function showColors() {
+    showAILoading('Extracting colors...');
     const img = getCurrentModalImage();
     if (!img) {
         showAIResult('❌ No image found');
         return;
     }
     
-    console.log('Starting tag generation for:', img.src);
-    
     try {
-        const tags = await window.AITagging?.generateImageTags?.(img);
-        console.log('Tags returned:', tags);
+        const colors = await extractColorPalette(img);
         
-        if (tags && tags.length > 0) {
-            // Add to the tags field (comma-separated)
-            const tagsField = document.getElementById('editTags');
-            if (tagsField) {
-                const existingTags = tagsField.value ? tagsField.value.split(',').map(t => t.trim()) : [];
-                const newTags = tags.filter(tag => !existingTags.includes(tag));
-                const allTags = [...existingTags, ...newTags].filter(t => t);
-                tagsField.value = allTags.join(', ');
-            }
-            showAIResult(`✅ Added ${tags.length} tags: ${tags.join(', ')}`);
+        if (colors) {
+            let html = '<div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;">';
+            let colorCount = 0;
+            Object.entries(colors).forEach(([name, hex]) => {
+                if (hex) {
+                    colorCount++;
+                    html += `
+                        <div style="text-align: center;">
+                            <div style="width: 100%; height: 40px; background: ${hex}; border-radius: 4px; margin-bottom: 4px;"></div>
+                            <div style="font-size: 10px;">${name.replace(/([A-Z])/g, ' $1').trim()}</div>
+                            <div style="font-size: 9px; color: #666;">${hex}</div>
+                        </div>
+                    `;
+                }
+            });
+            html += '</div>';
+            showAIResult(html, true);
         } else {
-            showAIResult('❌ Could not generate tags - model returned empty');
+            showAIResult('❌ Could not extract colors');
         }
     } catch (error) {
-        console.error('Error in generateTags:', error);
+        console.error('Error extracting colors:', error.message);
         showAIResult('❌ Error: ' + error.message);
-    }
-}
-
-async function showColors() {
-    showAILoading('Extracting colors...');
-    const img = getCurrentModalImage();
-    if (!img) return;
-    
-    const colors = await extractColorPalette(img.src);
-    if (colors) {
-        let html = '<div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;">';
-        Object.entries(colors).forEach(([name, hex]) => {
-            if (hex) {
-                html += `
-                    <div style="text-align: center;">
-                        <div style="width: 100%; height: 40px; background: ${hex}; border-radius: 4px; margin-bottom: 4px;"></div>
-                        <div style="font-size: 10px;">${name.replace(/([A-Z])/g, ' $1').trim()}</div>
-                        <div style="font-size: 9px; color: #666;">${hex}</div>
-                    </div>
-                `;
-            }
-        });
-        html += '</div>';
-        showAIResult(html, true);
-    } else {
-        showAIResult('❌ Could not extract colors');
-    }
-}
-
-async function showFaces() {
-    showAILoading('Detecting faces...');
-    const img = getCurrentModalImage();
-    if (!img) return;
-    
-    const result = await detectFaces(img.src);
-    if (result && result.faceCount > 0) {
-        let html = `<strong>Found ${result.faceCount} face(s)</strong><br><br>`;
-        result.faces.forEach((face, i) => {
-            const topExpression = Object.entries(face.expressions)
-                .sort((a, b) => b[1] - a[1])[0];
-            html += `
-                <div style="margin-bottom: 8px; padding: 8px; background: white; border-radius: 4px;">
-                    <strong>Face ${i + 1}</strong><br>
-                    Age: ~${face.age} years<br>
-                    Gender: ${face.gender} (${Math.round(face.genderProbability * 100)}%)<br>
-                    Expression: ${topExpression[0]} (${Math.round(topExpression[1] * 100)}%)
-                </div>
-            `;
-        });
-        showAIResult(html, true);
-    } else {
-        showAIResult('No faces detected');
     }
 }
 
@@ -571,7 +357,7 @@ async function showText() {
     const img = getCurrentModalImage();
     if (!img) return;
     
-    const result = await extractText(img.src);
+    const result = await extractText(img);
     if (result && result.text) {
         const desc = document.getElementById('editDescription');
         if (desc && result.text.length < 500) {
@@ -583,60 +369,20 @@ async function showText() {
     }
 }
 
-async function showSafety() {
-    showAILoading('Checking content safety...');
-    const img = getCurrentModalImage();
-    if (!img) return;
-    
-    const result = await checkNsfwContent(img.src);
-    if (result) {
-        let html = `<strong>Safety Check Results</strong><br><br>`;
-        html += `Overall: ${result.isNsfw ? '⚠️ NSFW Content Detected' : '✅ Safe Content'}<br>`;
-        html += `Safety Score: ${Math.round(result.safetyScore * 100)}%<br><br>`;
-        html += '<strong>Breakdown:</strong><br>';
-        result.predictions.forEach(p => {
-            const bar = Math.round(p.probability * 100);
-            html += `
-                <div style="margin: 4px 0;">
-                    ${p.className}: ${bar}%
-                    <div style="background: #ddd; height: 8px; border-radius: 4px; overflow: hidden;">
-                        <div style="background: ${p.probability > 0.5 ? '#e74c3c' : '#2ecc71'}; height: 100%; width: ${bar}%;"></div>
-                    </div>
-                </div>
-            `;
-        });
-        showAIResult(html, true);
-    } else {
-        showAIResult('❌ Could not check content');
-    }
-}
-
-async function showObjects() {
-    showAILoading('Detecting objects...');
-    const img = getCurrentModalImage();
-    if (!img) return;
-    
-    const result = await detectObjects(img.src);
-    if (result && result.objectCount > 0) {
-        let html = `<strong>Found ${result.objectCount} object(s)</strong><br><br>`;
-        result.objects.forEach((obj, i) => {
-            html += `
-                <div style="margin: 4px 0; padding: 4px 8px; background: white; border-radius: 4px;">
-                    ${i + 1}. ${obj.class} (${obj.confidence}% confidence)
-                </div>
-            `;
-        });
-        showAIResult(html, true);
-    } else {
-        showAIResult('No objects detected');
-    }
-}
-
 // Helper functions
 function getCurrentModalImage() {
     const modal = document.getElementById('imageModal');
-    if (!modal) return null;
-    return modal.querySelector('.modal-image img');
+    if (!modal) {
+        console.error('Modal not found');
+        return null;
+    }
+    const img = modal.querySelector('.modal-image img');
+    if (!img) {
+        console.error('Image not found in modal. Modal HTML:', modal.innerHTML.substring(0, 200));
+        return null;
+    }
+    console.log('Found modal image:', img.src);
+    return img;
 }
 
 function showAILoading(message) {
@@ -669,9 +415,6 @@ if (document.readyState === 'loading') {
 // Export for use in other scripts
 window.AIFeatures = {
     extractColorPalette,
-    detectFaces,
     extractText,
-    checkNsfwContent,
-    detectObjects,
     analyzeImageComprehensive
 };

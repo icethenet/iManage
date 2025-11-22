@@ -12,10 +12,9 @@
     <!-- TensorFlow.js for AI Features -->
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.11.0/dist/tf.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/mobilenet@2.1.0/dist/mobilenet.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd@2.2.3/dist/coco-ssd.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@vladmandic/face-api@1.7.12/dist/face-api.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/nsfwjs@2.4.2/dist/nsfwjs.min.js"></script>
+    <!-- OCR for text extraction -->
     <script src="https://cdn.jsdelivr.net/npm/tesseract.js@4.1.2/dist/tesseract.min.js"></script>
+    <!-- Color palette extraction -->
     <script src="https://cdn.jsdelivr.net/npm/node-vibrant@3.2.1-alpha.1/dist/vibrant.min.js"></script>
 </head>
 <body>
@@ -135,6 +134,15 @@
                             <label for="bulkTags">Tags (optional - applied to all images):</label>
                             <input type="text" id="bulkTags" name="tags" placeholder="Separate tags with commas">
                         </div> -->
+
+                        <!-- AI Auto-Tag Option -->
+                        <div class="form-group" style="display: flex; align-items: center; gap: 10px; padding: 12px; background: linear-gradient(135deg, #667eea22 0%, #764ba222 100%); border-radius: 8px; border: 1px solid #667eea44;">
+                            <input type="checkbox" id="autoTagUpload" checked style="width: 20px; height: 20px; cursor: pointer;">
+                            <label for="autoTagUpload" style="margin: 0; cursor: pointer; display: flex; align-items: center; gap: 8px; font-weight: 500;">
+                                🤖 Auto-generate AI tags on upload
+                                <span style="font-size: 12px; font-weight: normal; color: #666;">(uses TensorFlow.js MobileNet)</span>
+                            </label>
+                        </div>
 
                         <div id="uploadProgress" class="upload-progress"></div>
 
@@ -1398,10 +1406,16 @@
                             <div class="form-group">
                                 <label for="editTags">Tags:</label>
                                 <input type="text" id="editTags" class="form-control" placeholder="Comma-separated tags">
+                                <button id="generateAITagsBtn" class="btn btn-sm" style="margin-top: 8px; width: 100%; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; font-weight: 500;">
+                                    🤖 Generate AI Tags
+                                </button>
+                                <small style="display: block; margin-top: 4px; color: #666; font-size: 12px;">
+                                    Click to auto-generate tags using AI image recognition
+                                </small>
                             </div>
                             <div class="edit-actions">
-                                <button id="saveMetadataBtn" class="btn btn-sm">Save</button>
-                                <button id="cancelMetadataBtn" class="btn btn-sm">Cancel</button>
+                                <button id="saveMetadataBtn" class="btn btn-primary btn-sm">💾 Save Changes</button>
+                                <button id="cancelMetadataBtn" class="btn btn-secondary btn-sm">❌ Cancel</button>
                             </div>
                         </div>
                     </div>
@@ -1698,5 +1712,6 @@
     <script src="js/admin-security.js"></script>
     <script src="js/ai-tagging.js"></script>
     <script src="js/ai-features.js"></script>
+    <script src="js/tag-suggestions.js"></script>
 </body>
 </html>

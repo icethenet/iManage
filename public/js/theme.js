@@ -128,8 +128,7 @@ class ThemeManager {
 
         // Don't attach multiple times
         if (themeToggleBtn.onclick) {
-            console.log('ThemeManager: Event listeners already attached');
-            return;
+            return; // Already attached
         }
 
         // Attach toggle functionality
@@ -140,8 +139,6 @@ class ThemeManager {
         
         // Update icon based on current theme
         this.updateThemeIcon();
-        
-        console.log('ThemeManager: Theme controls attached successfully');
     }
 
     updateThemeIcon() {
@@ -275,15 +272,11 @@ class ThemeManager {
 }
 
 // Initialize theme manager when DOM is ready
-console.log('[ThemeManager] Script loaded, readyState:', document.readyState);
-
+// Initialize ThemeManager when DOM is ready
 if (document.readyState === 'loading') {
-    console.log('[ThemeManager] Waiting for DOMContentLoaded...');
     document.addEventListener('DOMContentLoaded', () => {
-        console.log('[ThemeManager] DOMContentLoaded fired, creating ThemeManager');
         window.themeManager = new ThemeManager();
     });
 } else {
-    console.log('[ThemeManager] DOM already ready, creating ThemeManager immediately');
     window.themeManager = new ThemeManager();
 }

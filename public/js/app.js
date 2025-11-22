@@ -178,6 +178,68 @@ function setupEventListeners() {
     document.getElementById('editMetadataBtn')?.addEventListener('click', enterMetadataEditMode);
     document.getElementById('saveMetadataBtn')?.addEventListener('click', saveMetadata);
     document.getElementById('cancelMetadataBtn')?.addEventListener('click', exitMetadataEditMode);
+    
+    // AI tag generation button in metadata edit section
+    document.getElementById('generateAITagsBtn')?.addEventListener('click', async function(e) {
+        e.preventDefault();
+        console.log('🤖 Generate AI Tags button clicked');
+        
+        const button = this;
+        const originalText = button.innerHTML;
+        
+        try {
+            // Disable button during processing
+            button.disabled = true;
+            button.innerHTML = '🔄 Generating tags...';
+            
+            // Get the current image element
+            const img = document.getElementById('modalImage');
+            if (!img || !img.src) {
+                alert('No image loaded');
+                return;
+            }
+            
+            console.log('Calling AI tagging for image:', img.src);
+            
+            // Call the AI tagging function
+            const tags = await window.AITagging?.generateImageTags?.(img);
+            
+            console.log('AI tags received:', tags);
+            
+            if (tags && tags.length > 0) {
+                // Get existing tags
+                const tagsField = document.getElementById('editTags');
+                const existingTags = tagsField.value ? 
+                    tagsField.value.split(',').map(t => t.trim()).filter(t => t) : [];
+                
+                // Merge with new tags (avoid duplicates)
+                const newTags = tags.filter(tag => !existingTags.includes(tag));
+                const allTags = [...existingTags, ...newTags];
+                
+                // Update field
+                tagsField.value = allTags.join(', ');
+                
+                // Visual feedback
+                tagsField.style.transition = 'background-color 0.3s';
+                tagsField.style.backgroundColor = '#d4edda';
+                setTimeout(() => {
+                    tagsField.style.backgroundColor = '';
+                }, 1000);
+                
+                // Success message
+                alert(`✅ Added ${newTags.length} AI-generated tag(s):\n${newTags.join(', ')}\n\nClick "Save Changes" below to save.`);
+            } else {
+                alert('❌ Could not generate tags. Please try again.');
+            }
+        } catch (error) {
+            console.error('Error generating AI tags:', error);
+            alert('❌ Error generating tags: ' + error.message);
+        } finally {
+            // Restore button
+            button.disabled = false;
+            button.innerHTML = originalText;
+        }
+    });
 }
 
 // Attach listener for the share checkbox
@@ -538,21 +600,29 @@ function exitMetadataEditMode() {
 }
 
 function enterMetadataEditMode() {
-    // Get current values
+    console.log('📝 Entering edit mode...');
+    
+    // Get current values from display
     const title = document.getElementById('modalTitle').textContent;
     const description = document.getElementById('modalDescription').textContent;
     const tagsText = document.getElementById('modalTags').textContent;
-    const tags = tagsText.replace('Tags: ', '');
+    const tags = tagsText.replace('Tags: ', '').trim();
+    
+    console.log('Current tags from display:', tags);
     
     // Populate edit fields
     document.getElementById('editTitle').value = title;
     document.getElementById('editDescription').value = description === 'No description' ? '' : description;
     document.getElementById('editTags').value = tags;
     
+    console.log('Edit fields populated');
+    
     // Toggle visibility
     document.getElementById('metadataViewMode').style.display = 'none';
     document.getElementById('metadataEditMode').style.display = 'block';
     document.getElementById('editMetadataBtn').style.display = 'none';
+    
+    console.log('✅ Edit mode visible');
 }
 
 async function saveMetadata() {
@@ -561,6 +631,11 @@ async function saveMetadata() {
     const title = document.getElementById('editTitle').value.trim();
     const description = document.getElementById('editDescription').value.trim();
     const tags = document.getElementById('editTags').value.trim();
+    
+    console.log('💾 Saving metadata...');
+    console.log('Title:', title);
+    console.log('Description:', description);
+    console.log('Tags:', tags);
     
     showLoading(true);
     
@@ -578,6 +653,7 @@ async function saveMetadata() {
         });
         
         const data = await response.json();
+        console.log('Save response:', data);
         
         if (data.success) {
             // Update display
@@ -585,11 +661,17 @@ async function saveMetadata() {
             document.getElementById('modalDescription').textContent = description || 'No description';
             document.getElementById('modalTags').textContent = tags ? `Tags: ${tags}` : '';
             
+            console.log('✅ Metadata saved successfully!');
+            console.log('Updated display - Tags:', tags);
+            
             // Exit edit mode
             exitMetadataEditMode();
             
             // Refresh gallery
             loadImages();
+            
+            // Show success message
+            alert('✅ Saved! Tags: ' + (tags || 'none'));
         } else {
             alert('Error updating metadata: ' + (data.error || 'Unknown error'));
         }
@@ -745,11 +827,9 @@ function handleImageUpload(e) {
 // Folders Functions
 function loadFolders() {
     const url = `${API_BASE}?action=list_folders`;
-    console.debug('Loading folders from', url);
     fetch(url)
         .then(response => response.json())
         .then(data => {
-            console.debug('Folders response', data);
             if (data && data.success) {
                 displayFolderSelect(data.data);
                 displayFoldersList(data.data);

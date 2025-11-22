@@ -1,4 +1,4 @@
-console.log('[AI DEBUG] ai-tagging.js loaded');
+// AI Tagging module loaded
 /**
  * AI Image Tagging with TensorFlow.js MobileNet
  * Automatically generates tags for uploaded images using client-side ML
@@ -12,7 +12,10 @@ let isModelLoading = false;
  * Load MobileNet model (lazy loading - only when needed)
  */
 async function loadMobileNet() {
-    if (mobilenetModel) return mobilenetModel;
+    if (mobilenetModel) {
+        return mobilenetModel;
+    }
+    
     if (isModelLoading) {
         // Wait for existing load to complete
         while (isModelLoading) {
@@ -23,12 +26,23 @@ async function loadMobileNet() {
     
     try {
         isModelLoading = true;
-        console.log('🤖 Loading AI model...');
+        
+        // Check if mobilenet is available
+        if (typeof mobilenet === 'undefined') {
+            throw new Error('MobileNet library not loaded. Check if script is included in HTML.');
+        }
+        
+        // Check if TensorFlow.js is available
+        if (typeof tf === 'undefined') {
+            throw new Error('TensorFlow.js not loaded. Check if script is included in HTML.');
+        }
+        
         mobilenetModel = await mobilenet.load();
-        console.log('✅ AI model loaded successfully');
         return mobilenetModel;
     } catch (error) {
         console.error('❌ Failed to load AI model:', error);
+        console.error('Stack:', error.stack);
+        alert('Failed to load AI model. Please refresh the page and try again.\n\nError: ' + error.message);
         return null;
     } finally {
         isModelLoading = false;
@@ -42,28 +56,26 @@ async function loadMobileNet() {
  */
 async function generateImageTags(imageSource) {
     try {
-        console.log('generateImageTags called with:', imageSource);
-        
         const model = await loadMobileNet();
         if (!model) {
             console.warn('AI model not available');
             return [];
         }
         
-        console.log('Model loaded successfully');
-        
         let imgElement;
         
         // Handle File object (create temporary image element)
         if (imageSource instanceof File) {
-            console.log('Source is File object');
             imgElement = await createImageElement(imageSource);
         } else if (typeof imageSource === 'string') {
-            console.log('Source is URL string:', imageSource);
-            // If it's a URL string, create an image element
-            imgElement = await createImageElementFromUrl(imageSource);
+            try {
+                // If it's a URL string, create an image element
+                imgElement = await createImageElementFromUrl(imageSource);
+            } catch (urlError) {
+                console.error('Failed to create image from URL:', urlError.message);
+                throw new Error('Failed to load image from URL: ' + urlError.message);
+            }
         } else {
-            console.log('Source is image element, cloning with CORS');
             // Already an image element - clone it with CORS
             imgElement = await createImageElementFromUrl(imageSource.src);
         }
@@ -72,22 +84,35 @@ async function generateImageTags(imageSource) {
         console.log('🔍 Analyzing image with AI...');
         
         const predictions = await model.classify(imgElement);
-        console.log('Raw predictions:', predictions);
         
-        // Extract top 3 predictions with confidence > 10%
+        if (!predictions || predictions.length === 0) {
+            console.error('Model returned no predictions');
+            throw new Error('Model classification returned empty results');
+        }
+        
+        // Extract top 3-5 predictions with confidence > 5%
         const tags = predictions
-            .filter(pred => pred.probability > 0.1)
-            .slice(0, 3)
+            .filter(pred => pred.probability > 0.05)
+            .slice(0, 5)
             .map(pred => {
-                // Clean up tag name (remove technical prefixes, simplify)
+                // Clean up tag name
                 return pred.className
-                    .split(',')[0] // Take first synonym
+                    .split(',')[0]
                     .trim()
                     .toLowerCase()
-                    .replace(/_/g, ' '); // Replace underscores with spaces
+                    .replace(/_/g, ' ')
+                    .replace(/\s+/g, ' ');
             });
         
-        console.log('✅ Generated tags:', tags);
+        if (tags.length === 0) {
+            // If all filtered out, return top prediction
+            const fallbackTag = predictions[0].className
+                .split(',')[0]
+                .trim()
+                .toLowerCase()
+                .replace(/_/g, ' ');
+            return [fallbackTag];
+        }
         
         // Clean up temporary element
         if (imgElement.parentNode) {
@@ -96,9 +121,8 @@ async function generateImageTags(imageSource) {
         
         return tags;
     } catch (error) {
-        console.error('❌ Error generating tags:', error);
-        console.error('Error stack:', error.stack);
-        return [];
+        console.error('Error generating tags:', error.message);
+        throw error;
     }
 }
 
@@ -110,25 +134,41 @@ async function generateImageTags(imageSource) {
 function createImageElementFromUrl(url) {
     return new Promise((resolve, reject) => {
         const img = new Image();
-        img.crossOrigin = 'anonymous';
+        
+        // DON'T use crossOrigin for same-origin images - it blocks session cookies!
+        // Only use crossOrigin for external images
+        const isSameOrigin = url.startsWith(window.location.origin) || url.startsWith('/');
+        
+        if (!isSameOrigin) {
+            img.crossOrigin = 'anonymous';
+        }
+        
+        // Set timeout in case image never loads
+        const timeout = setTimeout(() => {
+            reject(new Error('Image load timeout'));
+        }, 10000);
         
         img.onload = () => {
+            clearTimeout(timeout);
             resolve(img);
         };
         
-        img.onerror = () => {
-            reject(new Error('Failed to load image from URL'));
+        img.onerror = (e) => {
+            clearTimeout(timeout);
+            console.error('Failed to load image:', url);
+            reject(new Error('Failed to load image. Check Network tab for 401/403 errors.'));
         };
         
-        // Always use proxy for /uploads/ images, handle absolute/relative URLs and spaces
+        // Always use proxy for /uploads/ images to handle authentication
         const uploadsPattern = /\/uploads\/(.+)/;
         const match = url.match(uploadsPattern);
         if (match && match[1]) {
             let path = match[1];
-            // Decode URI components, then re-encode for proxy
-            path = decodeURIComponent(path);
-            img.src = 'image-proxy.php?path=' + encodeURIComponent(path);
+            const proxyUrl = 'image-proxy.php?path=' + path;
+            img.src = proxyUrl;
         } else {
+            // External image - use CORS
+            img.crossOrigin = 'anonymous';
             img.src = url;
         }
         
@@ -154,7 +194,7 @@ function createImageElement(file) {
         
         img.onerror = () => {
             URL.revokeObjectURL(url);
-            reject(new Error('Failed to load image'));
+            reject(new Error('Failed to load image from file'));
         };
         
         img.src = url;
@@ -184,46 +224,86 @@ function addAITaggingButton() {
     
     aiTagBtn.addEventListener('click', async function() {
         const imageId = document.getElementById('modalImageId')?.value;
-        const imageElement = document.querySelector('#imageModal img');
+        const imageElement = document.querySelector('#imageModal .modal-image img');
         
         if (!imageElement) {
-            alert('No image found');
+            showTagNotification('No image found in modal', 'error');
+            console.error('Image element not found. Modal HTML:', document.getElementById('imageModal')?.innerHTML);
             return;
         }
+        
+        console.log('=== AI TAGGING STARTED ===');
+        console.log('Image element found:', imageElement);
+        console.log('Image src:', imageElement.src);
+        console.log('Image dimensions:', imageElement.width + 'x' + imageElement.height);
         
         // Disable button and show loading state
         aiTagBtn.disabled = true;
         aiTagBtn.innerHTML = '🔄 Analyzing...';
         
         try {
-            // Generate tags
-            const tags = await generateImageTags(imageElement);
+            // Generate tags - pass the src URL instead of the element
+            console.log('Calling generateImageTags with:', imageElement.src);
+            const tags = await generateImageTags(imageElement.src);
             
-            if (tags.length === 0) {
-                alert('Could not generate tags. Please try again.');
+            console.log('Tags returned:', tags);
+            
+            if (!tags || tags.length === 0) {
+                showTagNotification('Could not generate tags. Please try again.', 'error');
+                console.error('generateImageTags returned empty array');
                 return;
             }
             
-            // Get current description
-            const descriptionField = document.getElementById('editDescription');
-            const currentDesc = descriptionField.value.trim();
+            // FIRST: Check if we're in edit mode, if not, enter it
+            const editMode = document.getElementById('metadataEditMode');
+            const isEditModeVisible = editMode && editMode.style.display !== 'none';
             
-            // Format tags
-            const tagString = tags.map(tag => `#${tag}`).join(' ');
-            
-            // Append or set tags
-            if (currentDesc) {
-                descriptionField.value = currentDesc + '\n\nAI Tags: ' + tagString;
-            } else {
-                descriptionField.value = 'AI Tags: ' + tagString;
+            if (!isEditModeVisible) {
+                // Click the Edit Info button to show the edit form
+                const editBtn = document.getElementById('editMetadataBtn');
+                if (editBtn) {
+                    console.log('Entering edit mode first...');
+                    editBtn.click();
+                }
             }
             
-            // Show success message
-            alert(`Generated ${tags.length} AI tags:\n${tags.join(', ')}`);
+            // Wait a moment for the DOM to update
+            setTimeout(() => {
+                // Get current tags field
+                const tagsField = document.getElementById('editTags');
+                if (!tagsField) {
+                    showTagNotification('Tags field not found', 'error');
+                    return;
+                }
+                
+                // Get existing tags
+                const existingTags = tagsField.value ? 
+                    tagsField.value.split(',').map(t => t.trim()).filter(t => t) : [];
+                
+                // Merge with new tags (avoid duplicates)
+                const newTags = tags.filter(tag => !existingTags.includes(tag));
+                const allTags = [...existingTags, ...newTags];
+                
+                // Update tags field
+                tagsField.value = allTags.join(', ');
+                
+                // Visual feedback
+                tagsField.style.transition = 'background-color 0.3s';
+                tagsField.style.backgroundColor = '#d4edda';
+                setTimeout(() => {
+                    tagsField.style.backgroundColor = '';
+                }, 1000);
+                
+                // Show success notification with save reminder
+                showTagNotification(
+                    `✅ Added ${newTags.length} new tag(s): ${newTags.join(', ')}\n\n📝 Click "Save" button below to save to database!`, 
+                    'success'
+                );
+            }, 100);
             
         } catch (error) {
             console.error('Error:', error);
-            alert('Failed to generate tags. Please try again.');
+            showTagNotification('❌ Failed to generate tags: ' + error.message, 'error');
         } finally {
             // Restore button
             aiTagBtn.disabled = false;
@@ -231,11 +311,86 @@ function addAITaggingButton() {
         }
     });
     
-    // Insert after description field
-    const descField = metadataSection.querySelector('#modalImageDescription');
-    if (descField && descField.parentNode) {
-        descField.parentNode.insertBefore(aiTagBtn, descField.nextSibling);
+    // Insert after tags field
+    const tagsField = document.getElementById('editTags');
+    if (tagsField && tagsField.parentNode) {
+        tagsField.parentNode.appendChild(aiTagBtn);
+    } else {
+        // Fallback: insert after description field
+        const descField = metadataSection.querySelector('#modalImageDescription');
+        if (descField && descField.parentNode) {
+            descField.parentNode.insertBefore(aiTagBtn, descField.nextSibling);
+        }
     }
+}
+
+/**
+ * Show notification for tag operations
+ */
+function showTagNotification(message, type = 'info') {
+    // Remove existing notification
+    const existing = document.getElementById('ai-tag-notification');
+    if (existing) {
+        existing.remove();
+    }
+    
+    // Create notification
+    const notification = document.createElement('div');
+    notification.id = 'ai-tag-notification';
+    notification.textContent = message;
+    notification.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        padding: 15px 20px;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 500;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        z-index: 10000;
+        max-width: 400px;
+        animation: slideInRight 0.3s ease-out;
+        ${type === 'success' ? 'background: #d4edda; color: #155724; border-left: 4px solid #28a745;' : ''}
+        ${type === 'error' ? 'background: #f8d7da; color: #721c24; border-left: 4px solid #dc3545;' : ''}
+        ${type === 'info' ? 'background: #d1ecf1; color: #0c5460; border-left: 4px solid #17a2b8;' : ''}
+    `;
+    
+    document.body.appendChild(notification);
+    
+    // Auto-remove after 4 seconds
+    setTimeout(() => {
+        notification.style.animation = 'slideOutRight 0.3s ease-in';
+        setTimeout(() => notification.remove(), 300);
+    }, 4000);
+}
+
+// Add CSS animations
+if (!document.getElementById('ai-tag-styles')) {
+    const style = document.createElement('style');
+    style.id = 'ai-tag-styles';
+    style.textContent = `
+        @keyframes slideInRight {
+            from {
+                transform: translateX(400px);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+        @keyframes slideOutRight {
+            from {
+                transform: translateX(0);
+                opacity: 1;
+            }
+            to {
+                transform: translateX(400px);
+                opacity: 0;
+            }
+        }
+    `;
+    document.head.appendChild(style);
 }
 
 /**
@@ -276,6 +431,7 @@ if (typeof window !== 'undefined') {
     window.AITagging = {
         generateImageTags,
         autoTagOnUpload,
-        loadMobileNet
+        loadMobileNet,
+        showTagNotification
     };
 }
