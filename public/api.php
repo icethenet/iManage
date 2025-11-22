@@ -750,6 +750,34 @@ try {
             $controller = new UserController();
             $controller->checkStatus();
             break;
+            
+        case 'refresh_admin_status':
+            // Refresh admin status in session from database
+            if (!isset($_SESSION['user_id'])) {
+                echo json_encode(['success' => false, 'message' => 'Not logged in']);
+                break;
+            }
+            
+            try {
+                $db = Database::getInstance();
+                $stmt = $db->prepare("SELECT is_admin FROM users WHERE id = ?");
+                $stmt->execute([$_SESSION['user_id']]);
+                $user = $stmt->fetch(PDO::FETCH_ASSOC);
+                
+                if ($user) {
+                    $_SESSION['is_admin'] = $user['is_admin'] ? true : false;
+                    echo json_encode([
+                        'success' => true, 
+                        'is_admin' => $_SESSION['is_admin'],
+                        'message' => 'Session refreshed'
+                    ]);
+                } else {
+                    echo json_encode(['success' => false, 'message' => 'User not found']);
+                }
+            } catch (Exception $e) {
+                echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+            }
+            break;
 
         case 'get_oauth_error':
             $controller = new UserController();
