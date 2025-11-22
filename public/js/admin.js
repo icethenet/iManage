@@ -342,6 +342,11 @@ function saveSystemSettings() {
         enableLazyLoad: document.getElementById('enableLazyLoad').checked,
         
         // AI Integration
+        aiProvider: document.getElementById('aiProvider')?.value || 'none',
+        ollamaEndpoint: document.getElementById('ollamaEndpoint')?.value || 'http://localhost:11434',
+        ollamaModel: document.getElementById('ollamaModel')?.value || 'llama3.2',
+        lmstudioEndpoint: document.getElementById('lmstudioEndpoint')?.value || 'http://localhost:1234',
+        geminiApiKey: document.getElementById('geminiApiKey')?.value || '',
         openaiApiKey: document.getElementById('openaiApiKey')?.value || '',
         
         // Email Configuration
@@ -359,59 +364,86 @@ function saveSystemSettings() {
         logRetention: document.getElementById('logRetention').value
     };
     
-    // Save to backend
-    fetch('api.php', {
+    // Save AI settings to database
+    const aiSettings = {
+        aiProvider: settings.aiProvider,
+        ollamaEndpoint: settings.ollamaEndpoint,
+        ollamaModel: settings.ollamaModel,
+        lmstudioEndpoint: settings.lmstudioEndpoint,
+        geminiApiKey: settings.geminiApiKey,
+        openaiApiKey: settings.openaiApiKey
+    };
+    
+    console.log('Saving AI settings:', aiSettings);
+    
+    fetch('api.php?action=saveaisettings', {
         method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-            action: 'save_system_settings',
-            settings: settings
-        })
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(aiSettings)
     })
     .then(response => response.json())
     .then(data => {
+        console.log('Save response:', data);
         if (data.success) {
-            // Also save OpenAI API key to database
-            if (settings.openaiApiKey) {
-                return fetch('api.php?action=saveopenaikey', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ api_key: settings.openaiApiKey })
-                });
-            }
-            return { ok: true };
-        } else {
-            throw new Error(data.error || 'Unknown error');
-        }
-    })
-    .then(response => {
-        if (response.ok || response.success !== false) {
             alert('✓ Settings saved successfully!');
+        } else {
+            throw new Error(data.message || 'Failed to save AI settings');
         }
     })
     .catch(error => {
         console.error('Error saving settings:', error);
-        // Save to localStorage as fallback
-        localStorage.setItem('systemSettings', JSON.stringify(settings));
-        alert('✓ Settings saved locally!\n\n(Note: Backend implementation pending)');
+        alert('✗ Failed to save settings: ' + error.message);
     });
 }
 
 // Load OpenAI API key on settings tab load
 function loadOpenAIKey() {
-    fetch('api.php?action=getopenaikey')
+    console.log('Loading AI settings...');
+    fetch('api.php?action=getaisettings')
         .then(r => r.json())
         .then(data => {
-            if (data.success && data.api_key) {
-                const input = document.getElementById('openaiApiKey');
-                if (input) {
-                    input.value = data.api_key;
+            console.log('Loaded AI settings:', data);
+            if (data.success) {
+                // Set provider
+                const providerSelect = document.getElementById('aiProvider');
+                if (providerSelect && data.provider) {
+                    console.log('Setting provider to:', data.provider);
+                    providerSelect.value = data.provider;
+                    toggleAIProviderSettings();
+                }
+                
+                // Load provider-specific settings
+                if (data.provider === 'ollama') {
+                    if (data.ollama_endpoint) document.getElementById('ollamaEndpoint').value = data.ollama_endpoint;
+                    if (data.ollama_model) document.getElementById('ollamaModel').value = data.ollama_model;
+                } else if (data.provider === 'lmstudio') {
+                    if (data.lmstudio_endpoint) document.getElementById('lmstudioEndpoint').value = data.lmstudio_endpoint;
+                } else if (data.provider === 'gemini') {
+                    if (data.gemini_api_key) document.getElementById('geminiApiKey').value = data.gemini_api_key;
+                } else if (data.provider === 'openai') {
+                    if (data.openai_api_key) document.getElementById('openaiApiKey').value = data.openai_api_key;
                 }
             }
         })
-        .catch(e => console.error('Failed to load OpenAI key:', e));
+        .catch(e => console.error('Failed to load AI settings:', e));
+}
+
+// Toggle AI provider settings visibility
+function toggleAIProviderSettings() {
+    const provider = document.getElementById('aiProvider').value;
+    
+    // Hide all provider settings
+    document.querySelectorAll('.ai-provider-settings').forEach(el => {
+        el.style.display = 'none';
+    });
+    
+    // Show selected provider settings
+    if (provider && provider !== 'none') {
+        const settingsDiv = document.getElementById('aiSettings' + provider.charAt(0).toUpperCase() + provider.slice(1));
+        if (settingsDiv) {
+            settingsDiv.style.display = 'block';
+        }
+    }
 }
 
 // Reset system settings to defaults

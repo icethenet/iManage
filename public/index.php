@@ -1291,9 +1291,59 @@
                             <h4>🤖 AI Integration</h4>
                             <div class="settings-grid">
                                 <div class="setting-item" style="grid-column: 1 / -1;">
-                                    <label for="openaiApiKey">OpenAI API Key</label>
-                                    <input type="password" id="openaiApiKey" placeholder="sk-..." style="width: 100%;">
-                                    <small style="display: block; margin-top: 5px; color: #666;">Required for AI Text Spinner in Page Designer. Get your key from <a href="https://platform.openai.com/api-keys" target="_blank">OpenAI Platform</a></small>
+                                    <label for="aiProvider">AI Provider</label>
+                                    <select id="aiProvider" onchange="toggleAIProviderSettings()" style="width: 100%;">
+                                        <option value="none">None (Disabled)</option>
+                                        <option value="ollama">Ollama (Local - FREE)</option>
+                                        <option value="lmstudio">LM Studio (Local - FREE)</option>
+                                        <option value="gemini">Google Gemini (FREE Tier)</option>
+                                        <option value="openai">OpenAI (Paid)</option>
+                                    </select>
+                                </div>
+                                
+                                <!-- Ollama Settings -->
+                                <div id="aiSettingsOllama" class="ai-provider-settings" style="display: none; grid-column: 1 / -1;">
+                                    <div class="setting-item">
+                                        <label for="ollamaEndpoint">Ollama Endpoint</label>
+                                        <input type="text" id="ollamaEndpoint" placeholder="http://localhost:11434" style="width: 100%;">
+                                        <small style="display: block; margin-top: 5px; color: #666;">Default: http://localhost:11434 | Install: <a href="https://ollama.ai" target="_blank">ollama.ai</a></small>
+                                    </div>
+                                    <div class="setting-item">
+                                        <label for="ollamaModel">Model</label>
+                                        <select id="ollamaModel" style="width: 100%;">
+                                            <option value="llama3.2">Llama 3.2 (Recommended)</option>
+                                            <option value="mistral">Mistral</option>
+                                            <option value="phi3">Phi-3</option>
+                                            <option value="gemma2">Gemma 2</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                
+                                <!-- LM Studio Settings -->
+                                <div id="aiSettingsLmstudio" class="ai-provider-settings" style="display: none; grid-column: 1 / -1;">
+                                    <div class="setting-item">
+                                        <label for="lmstudioEndpoint">LM Studio Endpoint</label>
+                                        <input type="text" id="lmstudioEndpoint" placeholder="http://localhost:1234" style="width: 100%;">
+                                        <small style="display: block; margin-top: 5px; color: #666;">Default: http://localhost:1234 | Download: <a href="https://lmstudio.ai" target="_blank">lmstudio.ai</a></small>
+                                    </div>
+                                </div>
+                                
+                                <!-- Gemini Settings -->
+                                <div id="aiSettingsGemini" class="ai-provider-settings" style="display: none; grid-column: 1 / -1;">
+                                    <div class="setting-item">
+                                        <label for="geminiApiKey">Gemini API Key</label>
+                                        <input type="password" id="geminiApiKey" placeholder="Your Gemini API Key" style="width: 100%;">
+                                        <small style="display: block; margin-top: 5px; color: #666;">FREE tier available! Get key: <a href="https://makersuite.google.com/app/apikey" target="_blank">Google AI Studio</a></small>
+                                    </div>
+                                </div>
+                                
+                                <!-- OpenAI Settings -->
+                                <div id="aiSettingsOpenai" class="ai-provider-settings" style="display: none; grid-column: 1 / -1;">
+                                    <div class="setting-item">
+                                        <label for="openaiApiKey">OpenAI API Key</label>
+                                        <input type="password" id="openaiApiKey" placeholder="sk-..." style="width: 100%;">
+                                        <small style="display: block; margin-top: 5px; color: #666;">Get your key from <a href="https://platform.openai.com/api-keys" target="_blank">OpenAI Platform</a></small>
+                                    </div>
                                 </div>
                             </div>
                         </div>

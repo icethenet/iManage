@@ -1036,6 +1036,7 @@ try {
             exit;
 
         case 'saveopenaikey':
+        case 'saveaisettings':
             requireLogin();
             
             // Check if user is admin
@@ -1051,30 +1052,39 @@ try {
             
             try {
                 $input = json_decode(file_get_contents('php://input'), true);
-                $apiKey = $input['api_key'] ?? '';
                 
-                // Check if setting exists
-                $stmt = $db->prepare("SELECT id FROM system_settings WHERE setting_key = 'openai_api_key'");
-                $stmt->execute();
-                $exists = $stmt->fetch();
+                // Save all AI settings
+                $settings = [
+                    'ai_provider' => $input['aiProvider'] ?? 'none',
+                    'ollama_endpoint' => $input['ollamaEndpoint'] ?? 'http://localhost:11434',
+                    'ollama_model' => $input['ollamaModel'] ?? 'llama3.2',
+                    'lmstudio_endpoint' => $input['lmstudioEndpoint'] ?? 'http://localhost:1234',
+                    'gemini_api_key' => $input['geminiApiKey'] ?? '',
+                    'openai_api_key' => $input['api_key'] ?? $input['openaiApiKey'] ?? ''
+                ];
                 
-                if ($exists) {
-                    // Update
-                    $stmt = $db->prepare("UPDATE system_settings SET setting_value = ? WHERE setting_key = 'openai_api_key'");
-                    $stmt->execute([$apiKey]);
-                } else {
-                    // Insert
-                    $stmt = $db->prepare("INSERT INTO system_settings (setting_key, setting_value) VALUES ('openai_api_key', ?)");
-                    $stmt->execute([$apiKey]);
+                foreach ($settings as $key => $value) {
+                    $stmt = $db->prepare("SELECT id FROM system_settings WHERE setting_key = ?");
+                    $stmt->execute([$key]);
+                    $exists = $stmt->fetch();
+                    
+                    if ($exists) {
+                        $stmt = $db->prepare("UPDATE system_settings SET setting_value = ? WHERE setting_key = ?");
+                        $stmt->execute([$value, $key]);
+                    } else {
+                        $stmt = $db->prepare("INSERT INTO system_settings (setting_key, setting_value) VALUES (?, ?)");
+                        $stmt->execute([$key, $value]);
+                    }
                 }
                 
-                echo json_encode(['success' => true, 'message' => 'API key saved']);
+                echo json_encode(['success' => true, 'message' => 'AI settings saved']);
             } catch (Exception $e) {
                 echo json_encode(['success' => false, 'message' => $e->getMessage()]);
             }
             break;
             
         case 'getopenaikey':
+        case 'getaisettings':
             requireLogin();
             
             // Check if user is admin
@@ -1089,12 +1099,24 @@ try {
             }
             
             try {
-                $stmt = $db->prepare("SELECT setting_value FROM system_settings WHERE setting_key = 'openai_api_key'");
-                $stmt->execute();
-                $result = $stmt->fetch(PDO::FETCH_ASSOC);
-                $apiKey = $result['setting_value'] ?? '';
+                $settings = [
+                    'provider' => 'none',
+                    'ollama_endpoint' => 'http://localhost:11434',
+                    'ollama_model' => 'llama3.2',
+                    'lmstudio_endpoint' => 'http://localhost:1234',
+                    'gemini_api_key' => '',
+                    'openai_api_key' => ''
+                ];
                 
-                echo json_encode(['success' => true, 'api_key' => $apiKey]);
+                // Load all AI settings
+                $stmt = $db->query("SELECT setting_key, setting_value FROM system_settings WHERE setting_key LIKE 'ai_%' OR setting_key LIKE '%_api_key' OR setting_key LIKE 'ollama_%' OR setting_key LIKE 'lmstudio_%' OR setting_key LIKE 'gemini_%'");
+                while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+                    $key = str_replace('ai_', '', $row['setting_key']);
+                    $settings[$key] = $row['setting_value'];
+                }
+                
+                $settings['success'] = true;
+                echo json_encode($settings);
             } catch (Exception $e) {
                 echo json_encode(['success' => false, 'message' => $e->getMessage()]);
             }
@@ -1114,17 +1136,17 @@ try {
                     break;
                 }
                 
-                // Check if OpenAI API key is configured
+                // Get AI provider settings
                 $db = Database::getInstance();
-                $stmt = $db->prepare("SELECT setting_value FROM system_settings WHERE setting_key = 'openai_api_key'");
+                $stmt = $db->prepare("SELECT setting_value FROM system_settings WHERE setting_key = 'ai_provider'");
                 $stmt->execute();
                 $result = $stmt->fetch(PDO::FETCH_ASSOC);
-                $apiKey = $result['setting_value'] ?? '';
+                $provider = $result['setting_value'] ?? 'none';
                 
-                if (empty($apiKey)) {
+                if ($provider === 'none') {
                     echo json_encode([
                         'success' => false,
-                        'message' => 'OpenAI API key not configured. Please add it in Admin Settings.'
+                        'message' => 'AI provider not configured. Please select a provider in Admin Settings.'
                     ]);
                     break;
                 }
@@ -1136,43 +1158,153 @@ try {
                     default => 'Keep the rewrite approximately the same length.'
                 };
                 
-                $prompt = "Rewrite the following text in a {$tone} tone. {$lengthInstruction}\n\n" .
-                          "Original text: {$text}\n\n" .
-                          "Rewritten text:";
+                $prompt = "Rewrite the following text in a {$tone} tone. {$lengthInstruction}\n\nOriginal text: {$text}\n\nRewritten text:";
+                $systemPrompt = "You are a professional copywriter and content editor. Only output the rewritten text, no explanations.";
                 
-                // Call OpenAI API
-                $ch = curl_init('https://api.openai.com/v1/chat/completions');
-                curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-                curl_setopt($ch, CURLOPT_POST, true);
-                curl_setopt($ch, CURLOPT_HTTPHEADER, [
-                    'Content-Type: application/json',
-                    'Authorization: Bearer ' . $apiKey
-                ]);
-                curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode([
-                    'model' => 'gpt-3.5-turbo',
-                    'messages' => [
-                        ['role' => 'system', 'content' => 'You are a professional copywriter and content editor.'],
-                        ['role' => 'user', 'content' => $prompt]
-                    ],
-                    'temperature' => 0.7,
-                    'max_tokens' => 1000
-                ]));
+                $spunText = '';
                 
-                $response = curl_exec($ch);
-                $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-                curl_close($ch);
-                
-                if ($httpCode !== 200) {
-                    error_log("OpenAI API error: HTTP $httpCode - $response");
-                    echo json_encode([
-                        'success' => false,
-                        'message' => 'OpenAI API error. Please check your API key and try again.'
-                    ]);
-                    break;
+                // Handle different AI providers
+                switch ($provider) {
+                    case 'ollama':
+                        // Get Ollama settings
+                        $stmt = $db->prepare("SELECT setting_value FROM system_settings WHERE setting_key IN ('ollama_endpoint', 'ollama_model')");
+                        $stmt->execute();
+                        $ollamaSettings = ['ollama_endpoint' => 'http://localhost:11434', 'ollama_model' => 'llama3.2'];
+                        while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+                            $ollamaSettings[$row['setting_key']] = $row['setting_value'];
+                        }
+                        
+                        $ch = curl_init($ollamaSettings['ollama_endpoint'] . '/api/generate');
+                        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+                        curl_setopt($ch, CURLOPT_POST, true);
+                        curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
+                        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode([
+                            'model' => $ollamaSettings['ollama_model'],
+                            'prompt' => $systemPrompt . "\n\n" . $prompt,
+                            'stream' => false
+                        ]));
+                        
+                        $response = curl_exec($ch);
+                        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+                        curl_close($ch);
+                        
+                        if ($httpCode !== 200) {
+                            throw new Exception("Ollama error (HTTP $httpCode). Is Ollama running?");
+                        }
+                        
+                        $data = json_decode($response, true);
+                        $spunText = $data['response'] ?? '';
+                        break;
+                        
+                    case 'lmstudio':
+                        // Get LM Studio settings
+                        $stmt = $db->prepare("SELECT setting_value FROM system_settings WHERE setting_key = 'lmstudio_endpoint'");
+                        $stmt->execute();
+                        $result = $stmt->fetch(PDO::FETCH_ASSOC);
+                        $endpoint = $result['setting_value'] ?? 'http://localhost:1234';
+                        
+                        $ch = curl_init($endpoint . '/v1/chat/completions');
+                        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+                        curl_setopt($ch, CURLOPT_POST, true);
+                        curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
+                        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode([
+                            'messages' => [
+                                ['role' => 'system', 'content' => $systemPrompt],
+                                ['role' => 'user', 'content' => $prompt]
+                            ],
+                            'temperature' => 0.7,
+                            'max_tokens' => 1000
+                        ]));
+                        
+                        $response = curl_exec($ch);
+                        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+                        curl_close($ch);
+                        
+                        if ($httpCode !== 200) {
+                            throw new Exception("LM Studio error (HTTP $httpCode). Is LM Studio running with a model loaded?");
+                        }
+                        
+                        $data = json_decode($response, true);
+                        $spunText = $data['choices'][0]['message']['content'] ?? '';
+                        break;
+                        
+                    case 'gemini':
+                        // Get Gemini API key
+                        $stmt = $db->prepare("SELECT setting_value FROM system_settings WHERE setting_key = 'gemini_api_key'");
+                        $stmt->execute();
+                        $result = $stmt->fetch(PDO::FETCH_ASSOC);
+                        $apiKey = $result['setting_value'] ?? '';
+                        
+                        if (empty($apiKey)) {
+                            throw new Exception('Gemini API key not configured');
+                        }
+                        
+                        $ch = curl_init('https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=' . $apiKey);
+                        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+                        curl_setopt($ch, CURLOPT_POST, true);
+                        curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
+                        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode([
+                            'contents' => [
+                                ['parts' => [['text' => $systemPrompt . "\n\n" . $prompt]]]
+                            ]
+                        ]));
+                        
+                        $response = curl_exec($ch);
+                        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+                        curl_close($ch);
+                        
+                        if ($httpCode !== 200) {
+                            error_log("Gemini API error: $response");
+                            throw new Exception("Gemini API error (HTTP $httpCode)");
+                        }
+                        
+                        $data = json_decode($response, true);
+                        $spunText = $data['candidates'][0]['content']['parts'][0]['text'] ?? '';
+                        break;
+                        
+                    case 'openai':
+                        // Get OpenAI API key
+                        $stmt = $db->prepare("SELECT setting_value FROM system_settings WHERE setting_key = 'openai_api_key'");
+                        $stmt->execute();
+                        $result = $stmt->fetch(PDO::FETCH_ASSOC);
+                        $apiKey = $result['setting_value'] ?? '';
+                        
+                        if (empty($apiKey)) {
+                            throw new Exception('OpenAI API key not configured');
+                        }
+                        
+                        $ch = curl_init('https://api.openai.com/v1/chat/completions');
+                        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+                        curl_setopt($ch, CURLOPT_POST, true);
+                        curl_setopt($ch, CURLOPT_HTTPHEADER, [
+                            'Content-Type: application/json',
+                            'Authorization: Bearer ' . $apiKey
+                        ]);
+                        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode([
+                            'model' => 'gpt-3.5-turbo',
+                            'messages' => [
+                                ['role' => 'system', 'content' => $systemPrompt],
+                                ['role' => 'user', 'content' => $prompt]
+                            ],
+                            'temperature' => 0.7,
+                            'max_tokens' => 1000
+                        ]));
+                        
+                        $response = curl_exec($ch);
+                        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+                        curl_close($ch);
+                        
+                        if ($httpCode !== 200) {
+                            throw new Exception("OpenAI API error (HTTP $httpCode)");
+                        }
+                        
+                        $data = json_decode($response, true);
+                        $spunText = $data['choices'][0]['message']['content'] ?? '';
+                        break;
+                        
+                    default:
+                        throw new Exception("Unknown AI provider: $provider");
                 }
-                
-                $data = json_decode($response, true);
-                $spunText = $data['choices'][0]['message']['content'] ?? '';
                 
                 if (empty($spunText)) {
                     echo json_encode(['success' => false, 'message' => 'No response from AI']);
