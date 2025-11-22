@@ -1190,14 +1190,8 @@ try {
             
             try {
                 $input = json_decode(file_get_contents('php://input'), true);
-                $text = $input['text'] ?? '';
+                $mode = $input['mode'] ?? 'rewrite';
                 $tone = $input['tone'] ?? 'professional';
-                $length = $input['length'] ?? 'same';
-                
-                if (empty($text)) {
-                    echo json_encode(['success' => false, 'message' => 'Text is required']);
-                    break;
-                }
                 
                 // Get AI provider settings
                 $db = Database::getInstance();
@@ -1223,15 +1217,52 @@ try {
                     break;
                 }
                 
-                // Build prompt based on options
-                $lengthInstruction = match($length) {
-                    'shorter' => 'Make the rewrite shorter and more concise.',
-                    'longer' => 'Make the rewrite longer and more detailed.',
-                    default => 'Keep the rewrite approximately the same length.'
-                };
+                // Build prompt based on mode
+                $prompt = '';
+                $systemPrompt = '';
                 
-                $prompt = "Rewrite the following text in a {$tone} tone. {$lengthInstruction}\n\nOriginal text: {$text}\n\nRewritten text:";
-                $systemPrompt = "You are a professional copywriter and content editor. Only output the rewritten text, no explanations.";
+                if ($mode === 'generate') {
+                    // Generate new content
+                    $topic = $input['topic'] ?? '';
+                    $instructions = $input['instructions'] ?? '';
+                    $length = $input['length'] ?? 'medium';
+                    
+                    if (empty($topic)) {
+                        echo json_encode(['success' => false, 'message' => 'Topic is required']);
+                        break;
+                    }
+                    
+                    $lengthInstruction = match($length) {
+                        'short' => 'Write 1-2 short paragraphs.',
+                        'long' => 'Write 5 or more detailed paragraphs.',
+                        default => 'Write 3-4 medium-length paragraphs.'
+                    };
+                    
+                    $systemPrompt = "You are a professional content writer. Write engaging, well-structured content. Only output the content itself, no titles, headlines, or meta-commentary.";
+                    $prompt = "Write content about: {$topic}\n\nTone: {$tone}\n{$lengthInstruction}";
+                    
+                    if (!empty($instructions)) {
+                        $prompt .= "\n\nAdditional requirements: {$instructions}";
+                    }
+                } else {
+                    // Rewrite existing text
+                    $text = $input['text'] ?? '';
+                    $length = $input['length'] ?? 'same';
+                    
+                    if (empty($text)) {
+                        echo json_encode(['success' => false, 'message' => 'Text is required']);
+                        break;
+                    }
+                    
+                    $lengthInstruction = match($length) {
+                        'shorter' => 'Make the rewrite shorter and more concise.',
+                        'longer' => 'Make the rewrite longer and more detailed.',
+                        default => 'Keep the rewrite approximately the same length.'
+                    };
+                    
+                    $systemPrompt = "You are a professional copywriter and content editor. Only output the rewritten text, no explanations.";
+                    $prompt = "Rewrite the following text in a {$tone} tone. {$lengthInstruction}\n\nOriginal text: {$text}\n\nRewritten text:";
+                }
                 
                 $spunText = '';
                 

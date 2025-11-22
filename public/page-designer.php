@@ -238,6 +238,41 @@ $pageId = $_GET['id'] ?? null;
             background: rgba(255, 255, 255, 0.1);
         }
         
+        .ai-spinner-mode-tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #444;
+        }
+        
+        .ai-mode-tab {
+            padding: 10px 20px;
+            background: none;
+            border: none;
+            color: #999;
+            cursor: pointer;
+            font-size: 14px;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s;
+        }
+        
+        .ai-mode-tab:hover {
+            color: #ddd;
+        }
+        
+        .ai-mode-tab.active {
+            color: #667eea;
+            border-bottom-color: #667eea;
+        }
+        
+        .ai-mode-content {
+            display: none;
+        }
+        
+        .ai-mode-content.active {
+            display: block;
+        }
+        
         .ai-spinner-section {
             margin-bottom: 20px;
         }
@@ -261,6 +296,16 @@ $pageId = $_GET['id'] ?? null;
             font-size: 14px;
             min-height: 100px;
             resize: vertical;
+        }
+        
+        .ai-spinner-section input[type="text"] {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #555;
+            background: #1a1a1a;
+            color: #fff;
+            border-radius: 4px;
+            font-size: 14px;
         }
         
         .ai-spinner-section select {
@@ -376,35 +421,84 @@ $pageId = $_GET['id'] ?? null;
     <div id="aiSpinnerModal" class="ai-spinner-modal">
         <div class="ai-spinner-content">
             <div class="ai-spinner-header">
-                <h2><i class="fa fa-magic"></i> AI Text Spinner</h2>
+                <h2><i class="fa fa-magic"></i> AI Content Assistant</h2>
                 <button class="ai-spinner-close" onclick="closeAISpinner()">&times;</button>
             </div>
             
-            <div class="ai-spinner-section">
-                <label for="originalText">Original Text</label>
-                <textarea id="originalText" placeholder="Paste or type your text here..."></textarea>
+            <!-- Mode Tabs -->
+            <div class="ai-spinner-mode-tabs">
+                <button class="ai-mode-tab active" onclick="switchAIMode('rewrite')">
+                    <i class="fa fa-refresh"></i> Rewrite Text
+                </button>
+                <button class="ai-mode-tab" onclick="switchAIMode('generate')">
+                    <i class="fa fa-lightbulb-o"></i> Generate Content
+                </button>
             </div>
             
-            <div class="ai-spinner-options">
+            <!-- Rewrite Mode -->
+            <div id="rewriteMode" class="ai-mode-content active">
                 <div class="ai-spinner-section">
-                    <label for="spinTone">Tone</label>
-                    <select id="spinTone">
-                        <option value="professional">Professional</option>
-                        <option value="casual">Casual</option>
-                        <option value="friendly">Friendly</option>
-                        <option value="formal">Formal</option>
-                        <option value="persuasive">Persuasive</option>
-                        <option value="informative">Informative</option>
-                    </select>
+                    <label for="originalText">Original Text</label>
+                    <textarea id="originalText" placeholder="Paste or type your text here..."></textarea>
+                </div>
+                
+                <div class="ai-spinner-options">
+                    <div class="ai-spinner-section">
+                        <label for="spinTone">Tone</label>
+                        <select id="spinTone">
+                            <option value="professional">Professional</option>
+                            <option value="casual">Casual</option>
+                            <option value="friendly">Friendly</option>
+                            <option value="formal">Formal</option>
+                            <option value="persuasive">Persuasive</option>
+                            <option value="informative">Informative</option>
+                        </select>
+                    </div>
+                    
+                    <div class="ai-spinner-section">
+                        <label for="spinLength">Length</label>
+                        <select id="spinLength">
+                            <option value="same">Same Length</option>
+                            <option value="shorter">Shorter</option>
+                            <option value="longer">Longer</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Generate Mode -->
+            <div id="generateMode" class="ai-mode-content">
+                <div class="ai-spinner-section">
+                    <label for="generateTopic">Topic / Description</label>
+                    <input type="text" id="generateTopic" placeholder="e.g., Benefits of organic food, How to train a puppy...">
                 </div>
                 
                 <div class="ai-spinner-section">
-                    <label for="spinLength">Length</label>
-                    <select id="spinLength">
-                        <option value="same">Same Length</option>
-                        <option value="shorter">Shorter</option>
-                        <option value="longer">Longer</option>
-                    </select>
+                    <label for="generateInstructions">Additional Instructions (optional)</label>
+                    <textarea id="generateInstructions" placeholder="e.g., Include 3 bullet points, mention health benefits, keep it under 200 words..." style="min-height: 60px;"></textarea>
+                </div>
+                
+                <div class="ai-spinner-options">
+                    <div class="ai-spinner-section">
+                        <label for="generateTone">Tone</label>
+                        <select id="generateTone">
+                            <option value="professional">Professional</option>
+                            <option value="casual">Casual</option>
+                            <option value="friendly">Friendly</option>
+                            <option value="formal">Formal</option>
+                            <option value="persuasive">Persuasive</option>
+                            <option value="informative">Informative</option>
+                        </select>
+                    </div>
+                    
+                    <div class="ai-spinner-section">
+                        <label for="generateLength">Length</label>
+                        <select id="generateLength">
+                            <option value="short">Short (1-2 paragraphs)</option>
+                            <option value="medium" selected>Medium (3-4 paragraphs)</option>
+                            <option value="long">Long (5+ paragraphs)</option>
+                        </select>
+                    </div>
                 </div>
             </div>
             
@@ -1563,19 +1657,73 @@ $pageId = $_GET['id'] ?? null;
             modal.classList.remove('active');
         }
         
+        function switchAIMode(mode) {
+            // Update tabs
+            document.querySelectorAll('.ai-mode-tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            event.target.closest('.ai-mode-tab').classList.add('active');
+            
+            // Update content
+            document.querySelectorAll('.ai-mode-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            
+            if (mode === 'rewrite') {
+                document.getElementById('rewriteMode').classList.add('active');
+            } else if (mode === 'generate') {
+                document.getElementById('generateMode').classList.add('active');
+            }
+        }
+        
         async function spinText() {
-            const originalText = document.getElementById('originalText').value.trim();
-            const tone = document.getElementById('spinTone').value;
-            const length = document.getElementById('spinLength').value;
             const loading = document.getElementById('aiSpinnerLoading');
             const result = document.getElementById('aiSpinnerResult');
             const spinButton = document.getElementById('spinButton');
             const applyButton = document.getElementById('applyButton');
             const spunText = document.getElementById('spunText');
             
-            if (!originalText) {
-                alert('Please enter some text to spin');
-                return;
+            // Determine which mode is active
+            const isGenerateMode = document.getElementById('generateMode').classList.contains('active');
+            
+            let requestData = {};
+            
+            if (isGenerateMode) {
+                // Generate mode
+                const topic = document.getElementById('generateTopic').value.trim();
+                const instructions = document.getElementById('generateInstructions').value.trim();
+                const tone = document.getElementById('generateTone').value;
+                const length = document.getElementById('generateLength').value;
+                
+                if (!topic) {
+                    alert('Please enter a topic or description');
+                    return;
+                }
+                
+                requestData = {
+                    mode: 'generate',
+                    topic: topic,
+                    instructions: instructions,
+                    tone: tone,
+                    length: length
+                };
+            } else {
+                // Rewrite mode
+                const originalText = document.getElementById('originalText').value.trim();
+                const tone = document.getElementById('spinTone').value;
+                const length = document.getElementById('spinLength').value;
+                
+                if (!originalText) {
+                    alert('Please enter some text to rewrite');
+                    return;
+                }
+                
+                requestData = {
+                    mode: 'rewrite',
+                    text: originalText,
+                    tone: tone,
+                    length: length
+                };
             }
             
             // Show loading
@@ -1584,15 +1732,11 @@ $pageId = $_GET['id'] ?? null;
             spinButton.disabled = true;
             
             try {
-                console.log('🤖 Sending request to spintext API...');
+                console.log('🤖 Sending request to spintext API...', requestData);
                 const response = await fetch('api.php?action=spintext', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        text: originalText,
-                        tone: tone,
-                        length: length
-                    })
+                    body: JSON.stringify(requestData)
                 });
                 
                 console.log('📥 Response status:', response.status);
