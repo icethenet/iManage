@@ -1068,13 +1068,13 @@ $pageId = $_GET['id'] ?? null;
                             }
                         }
                     </style>
-                    <a href="#home">Home</a>
-                    <a href="#about">About</a>
-                    <a href="#services">Services</a>
-                    <a href="#contact">Contact</a>
+                    <a href="#home" data-gjs-type="link">Home</a>
+                    <a href="#about" data-gjs-type="link">About</a>
+                    <a href="#services" data-gjs-type="link">Services</a>
+                    <a href="#contact" data-gjs-type="link">Contact</a>
                 </nav>
             `,
-            attributes: { title: 'Responsive navigation menu with auto-styled link buttons. Drag links into the nav to add more.' }
+            attributes: { title: 'Responsive navigation menu. Click any link to edit its text and URL in the properties panel. Drag new links from blocks to add more.' }
         });
         
         // Define custom component type for gallery
