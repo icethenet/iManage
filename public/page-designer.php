@@ -1040,6 +1040,52 @@ $pageId = $_GET['id'] ?? null;
             }
         });
         
+        // Enhance the default link component to allow editing link text
+        editor.DomComponents.addType('link', {
+            extend: 'link',
+            model: {
+                defaults: {
+                    traits: [
+                        {
+                            type: 'text',
+                            label: 'Link Text',
+                            name: 'link-text',
+                            changeProp: 1
+                        },
+                        {
+                            type: 'text',
+                            label: 'URL',
+                            name: 'href'
+                        },
+                        {
+                            type: 'select',
+                            label: 'Target',
+                            name: 'target',
+                            options: [
+                                { value: '', name: 'Same window' },
+                                { value: '_blank', name: 'New window' }
+                            ]
+                        }
+                    ]
+                },
+                init() {
+                    // Set initial link text from element content
+                    const text = this.view.el.textContent.trim();
+                    if (text && text !== 'Link') {
+                        this.set('link-text', text);
+                    }
+                    
+                    // Listen for link-text changes
+                    this.on('change:link-text', () => {
+                        const newText = this.get('link-text');
+                        if (newText && this.view && this.view.el) {
+                            this.view.el.textContent = newText;
+                        }
+                    });
+                }
+            }
+        });
+        
         // Script to load images dynamically when page renders
         const galleryScript = function() {
             console.log('🖼️ Gallery script started');
