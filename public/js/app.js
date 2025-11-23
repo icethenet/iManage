@@ -453,25 +453,45 @@ function displayGallery(items, pagination) {
 
 // Helper function to copy to clipboard
 function copyToClipboard(text) {
-    navigator.clipboard.writeText(text).then(() => {
-        showCopyToast('✅ Link copied to clipboard!');
-    }).catch(err => {
-        console.error('Failed to copy:', err);
-        // Fallback: create a temporary input and copy from it
-        const tempInput = document.createElement('input');
-        tempInput.value = text;
-        tempInput.style.position = 'fixed';
-        tempInput.style.left = '-9999px';
-        document.body.appendChild(tempInput);
-        tempInput.select();
-        try {
-            document.execCommand('copy');
+    // Check if Clipboard API is available (requires HTTPS or localhost)
+    if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(text).then(() => {
             showCopyToast('✅ Link copied to clipboard!');
-        } catch (e) {
-            showCopyToast('❌ Failed to copy. Please copy manually: ' + text, 5000);
+        }).catch(err => {
+            console.error('Clipboard API failed:', err);
+            fallbackCopyToClipboard(text);
+        });
+    } else {
+        // Use fallback for non-secure contexts
+        fallbackCopyToClipboard(text);
+    }
+}
+
+function fallbackCopyToClipboard(text) {
+    // Fallback: create a temporary input and copy from it
+    const tempInput = document.createElement('input');
+    tempInput.value = text;
+    tempInput.style.position = 'fixed';
+    tempInput.style.left = '-9999px';
+    tempInput.style.top = '-9999px';
+    document.body.appendChild(tempInput);
+    tempInput.focus();
+    tempInput.select();
+    tempInput.setSelectionRange(0, 99999); // For mobile
+    
+    try {
+        const successful = document.execCommand('copy');
+        if (successful) {
+            showCopyToast('✅ Link copied to clipboard!');
+        } else {
+            showCopyToast('❌ Failed to copy. Link: ' + text, 5000);
         }
-        document.body.removeChild(tempInput);
-    });
+    } catch (e) {
+        console.error('Fallback copy failed:', e);
+        showCopyToast('📋 Copy this link: ' + text, 5000);
+    }
+    
+    document.body.removeChild(tempInput);
 }
 
 function showCopyToast(message, duration = 2000) {
