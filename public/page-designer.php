@@ -567,6 +567,7 @@ $pageId = $_GET['id'] ?? null;
         console.log('🚀 Script started');
         let pageId = <?= json_encode($pageId) ?>;
         let editor = null;
+        let currentPageData = null; // Store page data for preview
         
         console.log('📄 Page ID:', pageId);
         
@@ -737,9 +738,9 @@ $pageId = $_GET['id'] ?? null;
                 id: 'preview',
                 className: 'btn-preview',
                 label: '<i class="fa fa-eye"></i>',
-                command: 'preview',
-                togglable: true,
-                attributes: { title: 'Toggle Preview' }
+                command: 'open-preview',
+                togglable: false,
+                attributes: { title: 'Open Preview in New Tab' }
             }, {
                 id: 'save-db',
                 className: 'btn-save',
@@ -770,6 +771,12 @@ $pageId = $_GET['id'] ?? null;
         commands.add('open-ai-spinner', {
             run: function() {
                 openAISpinner();
+            }
+        });
+        
+        commands.add('open-preview', {
+            run: function() {
+                openPreview();
             }
         });
         
@@ -1442,6 +1449,9 @@ $pageId = $_GET['id'] ?? null;
                 const data = await response.json();
                 
                 if (data.success && data.page) {
+                    // Store page data for preview
+                    currentPageData = data.page;
+                    
                     // Set page title
                     if (data.page.page_title) {
                         document.getElementById('pageTitle').value = data.page.page_title;
@@ -1829,6 +1839,12 @@ $pageId = $_GET['id'] ?? null;
                         pageId = data.pageId;
                         console.log('🆔 New page ID:', pageId);
                     }
+                    // Update current page data for preview
+                    if (data.share_token) {
+                        if (!currentPageData) currentPageData = {};
+                        currentPageData.share_token = data.share_token;
+                        console.log('🔗 Preview URL updated:', 'landing-page.php?token=' + data.share_token);
+                    }
                 } else {
                     const errorMsg = data.message || data.error || 'Unknown error';
                     console.error('❌ Save failed:', errorMsg);
@@ -1838,6 +1854,27 @@ $pageId = $_GET['id'] ?? null;
                 console.error('💥 Save error:', error);
                 alert('Save failed: ' + error.message);
             }
+        }
+        
+        function openPreview() {
+            // Get page ID from URL
+            const urlParams = new URLSearchParams(window.location.search);
+            const pageId = urlParams.get('id');
+            
+            if (!pageId) {
+                alert('Please save the page first before previewing.');
+                return;
+            }
+            
+            // Check if page has been saved (has a token)
+            if (!currentPageData || !currentPageData.share_token) {
+                alert('Please save the page first to generate a preview link.');
+                return;
+            }
+            
+            // Open the landing page in a new tab
+            const previewUrl = 'landing-page.php?token=' + currentPageData.share_token;
+            window.open(previewUrl, '_blank');
         }
         
         function exitEditor() {

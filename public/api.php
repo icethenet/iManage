@@ -372,7 +372,14 @@ try {
                         $result = $stmt->execute([$html, $css, $gjsData, $title, $pageId, $userId]);
                     }
                     error_log("Update result: " . ($result ? 'SUCCESS' : 'FAILED'));
-                    echo json_encode(['success' => $result, 'pageId' => $pageId, 'message' => $result ? 'Updated' : 'Failed to update']);
+                    
+                    // Get share token for preview
+                    $tokenStmt = $db->prepare("SELECT share_token FROM landing_pages WHERE id = ?");
+                    $tokenStmt->execute([$pageId]);
+                    $tokenRow = $tokenStmt->fetch(PDO::FETCH_ASSOC);
+                    $shareToken = $tokenRow ? $tokenRow['share_token'] : null;
+                    
+                    echo json_encode(['success' => $result, 'pageId' => $pageId, 'share_token' => $shareToken, 'message' => $result ? 'Updated' : 'Failed to update']);
                 } else {
                     // Create new page with unique token
                     error_log("Creating new page");
@@ -384,7 +391,7 @@ try {
                     $result = $stmt->execute([$userId, $token, $html, $css, $gjsData, $title, $previewFilename]);
                     $newId = $db->lastInsertId();
                     error_log("Insert result: " . ($result ? 'SUCCESS' : 'FAILED') . ", ID: " . $newId);
-                    echo json_encode(['success' => $result, 'pageId' => $newId, 'token' => $token, 'message' => $result ? 'Created' : 'Failed to create']);
+                    echo json_encode(['success' => $result, 'pageId' => $newId, 'share_token' => $token, 'message' => $result ? 'Created' : 'Failed to create']);
                 }
             } catch (Exception $e) {
                 error_log("Exception in saveCustomPage: " . $e->getMessage());
