@@ -972,6 +972,111 @@ $pageId = $_GET['id'] ?? null;
             attributes: { title: 'Featured video from your uploads' }
         });
         
+        // Navigation Block
+        blockManager.add('nav-menu', {
+            label: '<i class="fa fa-bars"></i><div>Navigation Menu</div>',
+            category: 'Navigation',
+            content: `
+                <nav class="nav-menu nav-style-default" data-gjs-type="nav-menu" data-nav-style="default" data-nav-align="center">
+                    <style>
+                        .nav-menu {
+                            padding: 15px 30px;
+                            border-radius: 8px;
+                            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+                            display: flex;
+                            gap: 10px;
+                            flex-wrap: wrap;
+                            justify-content: center;
+                            align-items: center;
+                        }
+                        
+                        /* Default - Gradient Purple */
+                        .nav-menu.nav-style-default {
+                            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                        }
+                        .nav-menu.nav-style-default a {
+                            color: white;
+                            background: rgba(255, 255, 255, 0.2);
+                            border: 1px solid rgba(255, 255, 255, 0.3);
+                        }
+                        .nav-menu.nav-style-default a:hover {
+                            background: rgba(255, 255, 255, 0.3);
+                        }
+                        
+                        /* Dark Style */
+                        .nav-menu.nav-style-dark {
+                            background: #2c3e50;
+                        }
+                        .nav-menu.nav-style-dark a {
+                            color: #ecf0f1;
+                            background: rgba(255, 255, 255, 0.1);
+                            border: 1px solid rgba(255, 255, 255, 0.2);
+                        }
+                        .nav-menu.nav-style-dark a:hover {
+                            background: rgba(255, 255, 255, 0.2);
+                        }
+                        
+                        /* Light Style */
+                        .nav-menu.nav-style-light {
+                            background: #f8f9fa;
+                            border: 1px solid #dee2e6;
+                        }
+                        .nav-menu.nav-style-light a {
+                            color: #495057;
+                            background: white;
+                            border: 1px solid #dee2e6;
+                        }
+                        .nav-menu.nav-style-light a:hover {
+                            background: #e9ecef;
+                        }
+                        
+                        /* Blue Style */
+                        .nav-menu.nav-style-blue {
+                            background: linear-gradient(135deg, #2193b0 0%, #6dd5ed 100%);
+                        }
+                        .nav-menu.nav-style-blue a {
+                            color: white;
+                            background: rgba(255, 255, 255, 0.2);
+                            border: 1px solid rgba(255, 255, 255, 0.3);
+                        }
+                        .nav-menu.nav-style-blue a:hover {
+                            background: rgba(255, 255, 255, 0.3);
+                        }
+                        
+                        /* Common link styles */
+                        .nav-menu a {
+                            text-decoration: none;
+                            padding: 10px 20px;
+                            border-radius: 5px;
+                            font-weight: 500;
+                            transition: all 0.3s ease;
+                            display: inline-block;
+                        }
+                        .nav-menu a:hover {
+                            transform: translateY(-2px);
+                            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+                        }
+                        
+                        @media (max-width: 768px) {
+                            .nav-menu {
+                                flex-direction: column;
+                                padding: 10px 15px;
+                            }
+                            .nav-menu a {
+                                width: 100%;
+                                text-align: center;
+                            }
+                        }
+                    </style>
+                    <a href="#home">Home</a>
+                    <a href="#about">About</a>
+                    <a href="#services">Services</a>
+                    <a href="#contact">Contact</a>
+                </nav>
+            `,
+            attributes: { title: 'Responsive navigation menu with auto-styled link buttons. Drag links into the nav to add more.' }
+        });
+        
         // Define custom component type for gallery
         editor.DomComponents.addType('imanage-gallery', {
             model: {
@@ -1043,6 +1148,60 @@ $pageId = $_GET['id'] ?? null;
                         }
                     ],
                     'script-props': ['data-folder', 'data-max-videos', 'data-show-controls', 'data-autoplay', 'data-muted']
+                }
+            }
+        });
+        
+        // Define custom component type for navigation menu
+        editor.DomComponents.addType('nav-menu', {
+            model: {
+                defaults: {
+                    traits: [
+                        {
+                            type: 'select',
+                            label: 'Style',
+                            name: 'data-nav-style',
+                            options: [
+                                { value: 'default', name: 'Gradient Purple' },
+                                { value: 'dark', name: 'Dark' },
+                                { value: 'light', name: 'Light' },
+                                { value: 'blue', name: 'Blue' }
+                            ],
+                            changeProp: 1
+                        },
+                        {
+                            type: 'select',
+                            label: 'Alignment',
+                            name: 'data-nav-align',
+                            options: [
+                                { value: 'center', name: 'Center' },
+                                { value: 'left', name: 'Left' },
+                                { value: 'right', name: 'Right' }
+                            ],
+                            changeProp: 1
+                        }
+                    ],
+                    droppable: 'a, [data-gjs-type="link"]' // Only accept links
+                },
+                init() {
+                    this.on('change:data-nav-style', this.updateNavStyle);
+                    this.on('change:data-nav-align', this.updateNavAlign);
+                },
+                updateNavStyle() {
+                    const style = this.get('data-nav-style') || 'default';
+                    const el = this.view?.el;
+                    if (!el) return;
+                    
+                    // Remove existing style classes
+                    el.classList.remove('nav-style-default', 'nav-style-dark', 'nav-style-light', 'nav-style-blue');
+                    el.classList.add('nav-style-' + style);
+                },
+                updateNavAlign() {
+                    const align = this.get('data-nav-align') || 'center';
+                    const el = this.view?.el;
+                    if (!el) return;
+                    
+                    el.style.justifyContent = align === 'left' ? 'flex-start' : align === 'right' ? 'flex-end' : 'center';
                 }
             }
         });
