@@ -734,6 +734,13 @@ $pageId = $_GET['id'] ?? null;
                 command: 'open-ai-spinner',
                 attributes: { title: 'AI Text Spinner' }
             }, {
+                id: 'preview',
+                className: 'btn-preview',
+                label: '<i class="fa fa-eye"></i>',
+                command: 'preview',
+                togglable: true,
+                attributes: { title: 'Toggle Preview' }
+            }, {
                 id: 'save-db',
                 className: 'btn-save',
                 label: '<i class="fa fa-floppy-o"></i>',
