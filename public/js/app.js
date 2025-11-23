@@ -454,11 +454,87 @@ function displayGallery(items, pagination) {
 // Helper function to copy to clipboard
 function copyToClipboard(text) {
     navigator.clipboard.writeText(text).then(() => {
-        alert('Link copied to clipboard!');
+        showCopyToast('✅ Link copied to clipboard!');
     }).catch(err => {
         console.error('Failed to copy:', err);
-        prompt('Copy this link:', text);
+        // Fallback: create a temporary input and copy from it
+        const tempInput = document.createElement('input');
+        tempInput.value = text;
+        tempInput.style.position = 'fixed';
+        tempInput.style.left = '-9999px';
+        document.body.appendChild(tempInput);
+        tempInput.select();
+        try {
+            document.execCommand('copy');
+            showCopyToast('✅ Link copied to clipboard!');
+        } catch (e) {
+            showCopyToast('❌ Failed to copy. Please copy manually: ' + text, 5000);
+        }
+        document.body.removeChild(tempInput);
     });
+}
+
+function showCopyToast(message, duration = 2000) {
+    // Create toast element
+    const toast = document.createElement('div');
+    toast.textContent = message;
+    toast.style.cssText = `
+        position: fixed;
+        bottom: 30px;
+        right: 30px;
+        background: #2c2c2c;
+        color: white;
+        padding: 15px 25px;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        z-index: 10000;
+        font-size: 14px;
+        font-weight: 500;
+        animation: slideIn 0.3s ease-out;
+        max-width: 400px;
+        word-wrap: break-word;
+    `;
+    
+    // Add animation styles if not already present
+    if (!document.getElementById('toastAnimations')) {
+        const style = document.createElement('style');
+        style.id = 'toastAnimations';
+        style.textContent = `
+            @keyframes slideIn {
+                from {
+                    transform: translateX(400px);
+                    opacity: 0;
+                }
+                to {
+                    transform: translateX(0);
+                    opacity: 1;
+                }
+            }
+            @keyframes slideOut {
+                from {
+                    transform: translateX(0);
+                    opacity: 1;
+                }
+                to {
+                    transform: translateX(400px);
+                    opacity: 0;
+                }
+            }
+        `;
+        document.head.appendChild(style);
+    }
+    
+    document.body.appendChild(toast);
+    
+    // Auto-remove after duration
+    setTimeout(() => {
+        toast.style.animation = 'slideOut 0.3s ease-out';
+        setTimeout(() => {
+            if (toast.parentNode) {
+                toast.parentNode.removeChild(toast);
+            }
+        }, 300);
+    }, duration);
 }
 
 function updatePagination(pagination) {
