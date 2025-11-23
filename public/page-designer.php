@@ -1041,10 +1041,10 @@ $pageId = $_GET['id'] ?? null;
         });
         
         // Enhance the default link component to allow editing link text
+        const defaultLinkType = editor.DomComponents.getType('link');
         editor.DomComponents.addType('link', {
-            extend: 'link',
-            model: {
-                defaults: {
+            model: defaultLinkType.model.extend({
+                defaults: Object.assign({}, defaultLinkType.model.prototype.defaults, {
                     traits: [
                         {
                             type: 'text',
@@ -1067,23 +1067,25 @@ $pageId = $_GET['id'] ?? null;
                             ]
                         }
                     ]
-                },
+                }),
                 init() {
-                    // Set initial link text from element content
-                    const text = this.view.el.textContent.trim();
-                    if (text && text !== 'Link') {
-                        this.set('link-text', text);
-                    }
-                    
-                    // Listen for link-text changes
-                    this.on('change:link-text', () => {
-                        const newText = this.get('link-text');
-                        if (newText && this.view && this.view.el) {
-                            this.view.el.textContent = newText;
+                    this.on('change:link-text', this.updateLinkText);
+                    // Set initial text from content if not already set
+                    if (!this.get('link-text')) {
+                        const content = this.get('content') || this.get('components').at(0);
+                        if (content && typeof content === 'string' && content.trim()) {
+                            this.set('link-text', content.trim());
                         }
-                    });
+                    }
+                },
+                updateLinkText() {
+                    const text = this.get('link-text');
+                    if (text) {
+                        this.components(text);
+                    }
                 }
-            }
+            }),
+            view: defaultLinkType.view
         });
         
         // Script to load images dynamically when page renders
